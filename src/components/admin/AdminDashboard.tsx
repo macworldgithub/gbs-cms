@@ -1,57 +1,71 @@
-import React, { useState } from 'react';
-import { 
-  UsersIcon, 
-  CalendarIcon, 
-  MessageSquareIcon, 
+import React, { useState } from "react";
+import {
+  UsersIcon,
+  CalendarIcon,
+  MessageSquareIcon,
   LanguagesIcon,
   BarChart3Icon,
   SettingsIcon,
   ShieldIcon,
-  ShieldCheckIcon
-} from 'lucide-react';
-import { Button } from '../ui/button';
-import { Card } from '../ui/card';
-import { UserManager } from './UserManager';
-import { EventManager } from './EventManager';
-import { ChatManager } from './ChatManager';
-import { RoleManager } from './RoleManager';
-import { PermissionManager } from './PermissionManager';
-import { LanguageManager } from '../LanguageManager';
+  ShieldCheckIcon,
+} from "lucide-react";
+import { Bell } from "lucide-react";
+import { Button } from "../ui/button";
+import { Card } from "../ui/card";
+import { UserManager } from "./UserManager";
+import { EventManager } from "./EventManager";
+import { ChatManager } from "./ChatManager";
+import { RoleManager } from "./RoleManager";
+import { PermissionManager } from "./PermissionManager";
+import { LanguageManager } from "../LanguageManager";
+import NotificationMain from "./Notification";
 
-type AdminSection = 'overview' | 'users' | 'events' | 'chats' | 'roles' | 'permissions' | 'languages' | 'settings';
+type AdminSection =
+  | "overview"
+  | "users"
+  | "events"
+  | "chats"
+  | "roles"
+  | "permissions"
+  | "languages"
+  | "notification"
+  | "settings";
 
 export const AdminDashboard: React.FC = () => {
-  const [activeSection, setActiveSection] = useState<AdminSection>('overview');
+  const [activeSection, setActiveSection] = useState<AdminSection>("overview");
 
   const menuItems = [
-    { id: 'overview', label: 'Overview', icon: BarChart3Icon },
-    { id: 'users', label: 'Users', icon: UsersIcon },
-    { id: 'events', label: 'Events', icon: CalendarIcon },
-    { id: 'chats', label: 'Chats', icon: MessageSquareIcon },
-    { id: 'roles', label: 'Roles', icon: ShieldIcon },
-    { id: 'permissions', label: 'Permissions', icon: ShieldCheckIcon },
-    { id: 'languages', label: 'Languages', icon: LanguagesIcon },
-    { id: 'settings', label: 'Settings', icon: SettingsIcon },
+    { id: "overview", label: "Overview", icon: BarChart3Icon },
+    { id: "users", label: "Users", icon: UsersIcon },
+    { id: "events", label: "Events", icon: CalendarIcon },
+    { id: "chats", label: "Chats", icon: MessageSquareIcon },
+    { id: "roles", label: "Roles", icon: ShieldIcon },
+    { id: "permissions", label: "Permissions", icon: ShieldCheckIcon },
+    { id: "languages", label: "Languages", icon: LanguagesIcon },
+    { id: "settings", label: "Settings", icon: SettingsIcon },
+    { id: "notification", label: "Notification", icon: Bell },
   ];
 
   const renderContent = () => {
     switch (activeSection) {
-      case 'overview':
+      case "overview":
         return <AdminOverview />;
-      case 'users':
+      case "users":
         return <UserManager />;
-      case 'events':
+      case "events":
         return <EventManager />;
-      case 'chats':
+      case "chats":
         return <ChatManager />;
-      case 'roles':
+      case "roles":
         return <RoleManager />;
-      case 'permissions':
+      case "permissions":
         return <PermissionManager />;
-      case 'languages':
+      case "languages":
         return <LanguageManager />;
-      case 'settings':
+      case "settings":
         return <AdminSettings />;
+      case "notification":
+        return <NotificationMain />;
       default:
         return <AdminOverview />;
     }
@@ -73,9 +87,9 @@ export const AdminDashboard: React.FC = () => {
                 onClick={() => setActiveSection(item.id as AdminSection)}
                 variant={activeSection === item.id ? "default" : "ghost"}
                 className={`w-full justify-start mb-2 ${
-                  activeSection === item.id 
-                    ? 'bg-[#ec2227] text-white hover:bg-[#d41e23]' 
-                    : 'hover:bg-gray-100'
+                  activeSection === item.id
+                    ? "bg-[#ec2227] text-white hover:bg-[#d41e23]"
+                    : "hover:bg-gray-100"
                 }`}
               >
                 <Icon className="w-4 h-4 mr-3" />
@@ -87,9 +101,7 @@ export const AdminDashboard: React.FC = () => {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 overflow-auto">
-        {renderContent()}
-      </div>
+      <div className="flex-1 overflow-auto">{renderContent()}</div>
     </div>
   );
 };
@@ -97,7 +109,9 @@ export const AdminDashboard: React.FC = () => {
 const AdminOverview: React.FC = () => {
   return (
     <div className="p-6">
-      <h2 className="text-2xl font-bold text-gray-900 mb-6">Dashboard Overview</h2>
+      <h2 className="text-2xl font-bold text-gray-900 mb-6">
+        Dashboard Overview
+      </h2>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <Card className="p-6">
           <div className="flex items-center justify-between">
@@ -136,10 +150,12 @@ const AdminOverview: React.FC = () => {
           </div>
         </Card>
       </div>
-      
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card className="p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            Recent Activity
+          </h3>
           <div className="space-y-3">
             <div className="flex items-center gap-3">
               <div className="w-2 h-2 bg-green-500 rounded-full"></div>
@@ -163,9 +179,11 @@ const AdminOverview: React.FC = () => {
             </div>
           </div>
         </Card>
-        
+
         <Card className="p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            Quick Actions
+          </h3>
           <div className="space-y-3">
             <Button className="w-full justify-start bg-[#ec2227] hover:bg-[#d41e23]">
               <UsersIcon className="w-4 h-4 mr-2" />
@@ -195,7 +213,9 @@ const AdminSettings: React.FC = () => {
     <div className="p-6">
       <h2 className="text-2xl font-bold text-gray-900 mb-6">System Settings</h2>
       <Card className="p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Application Configuration</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">
+          Application Configuration
+        </h3>
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -219,22 +239,16 @@ const AdminSettings: React.FC = () => {
             </select>
           </div>
           <div className="flex items-center">
-            <input
-              type="checkbox"
-              id="maintenance"
-              className="mr-2"
-            />
-            <label htmlFor="maintenance" className="text-sm font-medium text-gray-700">
+            <input type="checkbox" id="maintenance" className="mr-2" />
+            <label
+              htmlFor="maintenance"
+              className="text-sm font-medium text-gray-700"
+            >
               Maintenance Mode
             </label>
           </div>
           <div className="flex items-center">
-            <input
-              type="checkbox"
-              id="rbac"
-              defaultChecked
-              className="mr-2"
-            />
+            <input type="checkbox" id="rbac" defaultChecked className="mr-2" />
             <label htmlFor="rbac" className="text-sm font-medium text-gray-700">
               Enable Role-Based Access Control
             </label>

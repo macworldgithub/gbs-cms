@@ -1,309 +1,207 @@
-import { Role, RoleFormData, BulkRoleData } from '../types';
+import { Role } from '../types/role';
+
+const API_BASE_URL = 'http://localhost:9000/';
 
 class RoleService {
-  private roles: Role[] = [
-    {
-      id: '1',
-      name: 'Super Admin',
-      description: 'Full system access with all permissions',
-      permissions: [
-        {
-          id: '1',
-          name: 'users.create',
-          description: 'Create new users',
-          resource: 'users',
-          action: 'create',
-          isActive: true,
-          createdAt: new Date('2024-01-01'),
-          updatedAt: new Date('2024-01-01'),
-        },
-        {
-          id: '2',
-          name: 'users.read',
-          description: 'View user information',
-          resource: 'users',
-          action: 'read',
-          isActive: true,
-          createdAt: new Date('2024-01-01'),
-          updatedAt: new Date('2024-01-01'),
-        },
-        {
-          id: '3',
-          name: 'users.update',
-          description: 'Update user information',
-          resource: 'users',
-          action: 'update',
-          isActive: true,
-          createdAt: new Date('2024-01-01'),
-          updatedAt: new Date('2024-01-01'),
-        },
-        {
-          id: '4',
-          name: 'users.delete',
-          description: 'Delete users',
-          resource: 'users',
-          action: 'delete',
-          isActive: true,
-          createdAt: new Date('2024-01-01'),
-          updatedAt: new Date('2024-01-01'),
-        },
-        {
-          id: '5',
-          name: 'events.manage',
-          description: 'Full event management',
-          resource: 'events',
-          action: 'manage',
-          isActive: true,
-          createdAt: new Date('2024-01-01'),
-          updatedAt: new Date('2024-01-01'),
-        },
-        {
-          id: '6',
-          name: 'chats.moderate',
-          description: 'Moderate chat conversations',
-          resource: 'chats',
-          action: 'moderate',
-          isActive: true,
-          createdAt: new Date('2024-01-01'),
-          updatedAt: new Date('2024-01-01'),
-        },
-        {
-          id: '7',
-          name: 'roles.manage',
-          description: 'Manage roles and permissions',
-          resource: 'roles',
-          action: 'manage',
-          isActive: true,
-          createdAt: new Date('2024-01-01'),
-          updatedAt: new Date('2024-01-01'),
-        },
-      ],
-      isActive: true,
-      createdAt: new Date('2024-01-01'),
-      updatedAt: new Date('2024-01-01'),
-    },
-    {
-      id: '2',
-      name: 'Event Manager',
-      description: 'Manage events and related content',
-      permissions: [
-        {
-          id: '2',
-          name: 'users.read',
-          description: 'View user information',
-          resource: 'users',
-          action: 'read',
-          isActive: true,
-          createdAt: new Date('2024-01-01'),
-          updatedAt: new Date('2024-01-01'),
-        },
-        {
-          id: '5',
-          name: 'events.manage',
-          description: 'Full event management',
-          resource: 'events',
-          action: 'manage',
-          isActive: true,
-          createdAt: new Date('2024-01-01'),
-          updatedAt: new Date('2024-01-01'),
-        },
-      ],
-      isActive: true,
-      createdAt: new Date('2024-01-01'),
-      updatedAt: new Date('2024-01-01'),
-    },
-    {
-      id: '3',
-      name: 'User',
-      description: 'Basic user with limited permissions',
-      permissions: [
-        {
-          id: '2',
-          name: 'users.read',
-          description: 'View user information',
-          resource: 'users',
-          action: 'read',
-          isActive: true,
-          createdAt: new Date('2024-01-01'),
-          updatedAt: new Date('2024-01-01'),
-        },
-        {
-          id: '8',
-          name: 'events.read',
-          description: 'View events',
-          resource: 'events',
-          action: 'read',
-          isActive: true,
-          createdAt: new Date('2024-01-01'),
-          updatedAt: new Date('2024-01-01'),
-        },
-        {
-          id: '9',
-          name: 'chats.participate',
-          description: 'Participate in chats',
-          resource: 'chats',
-          action: 'participate',
-          isActive: true,
-          createdAt: new Date('2024-01-01'),
-          updatedAt: new Date('2024-01-01'),
-        },
-      ],
-      isActive: true,
-      createdAt: new Date('2024-01-01'),
-      updatedAt: new Date('2024-01-01'),
-    },
-  ];
-
-  // GET /roles - Get all roles
-  async getAllRoles(): Promise<Role[]> {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    return this.roles.filter(role => role.isActive);
-  }
-
-  // GET /roles/{id} - Get a role by ID
-  async getRoleById(id: string): Promise<Role | null> {
-    await new Promise(resolve => setTimeout(resolve, 200));
-    return this.roles.find(role => role.id === id) || null;
-  }
-
-  // POST /roles - Create a new role
-  async createRole(roleData: RoleFormData): Promise<Role> {
-    await new Promise(resolve => setTimeout(resolve, 400));
-    
-    const newRole: Role = {
-      id: Date.now().toString(),
-      name: roleData.name,
-      description: roleData.description,
-      permissions: [], // Will be populated when permissions are added
-      isActive: roleData.isActive,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+  private async request<T>(
+    endpoint: string,
+    options: RequestInit = {}
+  ): Promise<T> {
+    const url = `${API_BASE_URL}${endpoint}`;
+    const config: RequestInit = {
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+      ...options,
     };
 
-    this.roles.push(newRole);
-    return newRole;
+    const response = await fetch(url, config);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    return response.json();
   }
 
-  // PUT /roles/{id} - Update a role
-  async updateRole(id: string, roleData: Partial<RoleFormData>): Promise<Role> {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    
-    const index = this.roles.findIndex(role => role.id === id);
-    if (index === -1) {
-      throw new Error('Role not found');
-    }
-
-    this.roles[index] = {
-      ...this.roles[index],
-      ...roleData,
-      updatedAt: new Date(),
-    };
-
-    return this.roles[index];
+  // GET /api/roles - Get all roles
+  async findAll(): Promise<Role[]> {
+    return this.request<Role[]>('roles');
   }
 
-  // DELETE /roles/{id} - Delete a role
-  async deleteRole(id: string): Promise<void> {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    
-    const index = this.roles.findIndex(role => role.id === id);
-    if (index === -1) {
-      throw new Error('Role not found');
-    }
-
-    this.roles[index].isActive = false;
-    this.roles[index].updatedAt = new Date();
+  // GET /api/roles/{id} - Get a role by ID
+  async findOne(id: string): Promise<Role> {
+    return this.request<Role>(`roles/${id}`);
   }
 
-  // POST /roles/bulk - Create multiple roles with permission names
-  async createBulkRoles(rolesData: BulkRoleData[]): Promise<Role[]> {
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    const newRoles: Role[] = [];
-    
-    for (const roleData of rolesData) {
-      const newRole: Role = {
-        id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
-        name: roleData.name,
-        description: roleData.description,
-        permissions: [], // Will be populated based on permission names
-        isActive: true,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-      
-      this.roles.push(newRole);
-      newRoles.push(newRole);
-    }
-
-    return newRoles;
+  // POST /api/roles - Create a new role
+  async create(roleData: {
+    name: string;
+    label: string;
+    permissions: Array<{
+      permission: string;
+      value: boolean | number;
+    }>;
+  }): Promise<Role> {
+    return this.request<Role>('roles', {
+      method: 'POST',
+      body: JSON.stringify(roleData),
+    });
   }
 
-  // POST /roles/{id}/permissions - Add a permission to a role by name or ID
-  async addPermissionToRole(roleId: string, permissionId: string): Promise<void> {
-    await new Promise(resolve => setTimeout(resolve, 200));
-    
-    const role = this.roles.find(r => r.id === roleId);
-    if (!role) {
-      throw new Error('Role not found');
-    }
-
-    // Check if permission already exists in role
-    const hasPermission = role.permissions.some(p => p.id === permissionId);
-    if (hasPermission) {
-      throw new Error('Permission already exists in role');
-    }
-
-    // In a real implementation, you would fetch the permission from permissionService
-    // For now, we'll create a mock permission
-    const mockPermission = {
-      id: permissionId,
-      name: `permission.${permissionId}`,
-      description: `Permission ${permissionId}`,
-      resource: 'mock',
-      action: 'mock',
-      isActive: true,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-
-    role.permissions.push(mockPermission);
-    role.updatedAt = new Date();
+  // PUT /api/roles/{id} - Update a role
+  async update(id: string, roleData: Partial<{
+    name: string;
+    label: string;
+    permissions: Array<{
+      permission: string;
+      value: boolean | number;
+    }>;
+  }>): Promise<Role> {
+    return this.request<Role>(`roles/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(roleData),
+    });
   }
 
-  // DELETE /roles/{id}/permissions/{permission} - Remove a permission from a role
+  // DELETE /api/roles/{id} - Delete a role
+  async delete(id: string): Promise<void> {
+    await this.request<void>(`roles/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // POST /api/roles/bulk - Create multiple roles
+  async createBulk(rolesData: Array<{
+    name: string;
+    label: string;
+    permissions: Array<{
+      permission: string;
+      value: boolean | number;
+    }>;
+  }>): Promise<Role[]> {
+    return this.request<Role[]>('roles/bulk', {
+      method: 'POST',
+      body: JSON.stringify(rolesData),
+    });
+  }
+
+  // POST /api/roles/{id}/permissions - Add a permission to a role
+  async addPermissionToRole(roleId: string, permission: {
+    permission: string;
+    value: boolean | number;
+  }): Promise<void> {
+    await this.request<void>(`roles/${roleId}/permissions`, {
+      method: 'POST',
+      body: JSON.stringify(permission),
+    });
+  }
+
+  // DELETE /api/roles/{id}/permissions/{permissionId} - Remove a permission from a role
   async removePermissionFromRole(roleId: string, permissionId: string): Promise<void> {
-    await new Promise(resolve => setTimeout(resolve, 200));
-    
-    const role = this.roles.find(r => r.id === roleId);
-    if (!role) {
-      throw new Error('Role not found');
-    }
-
-    role.permissions = role.permissions.filter(p => p.id !== permissionId);
-    role.updatedAt = new Date();
+    await this.request<void>(`roles/${roleId}/permissions/${permissionId}`, {
+      method: 'DELETE',
+    });
   }
 
-  // PUT /roles/{roleId}/permissions/{permissionId} - Add or update a permission in a role
-  async updateRolePermission(roleId: string, permissionId: string): Promise<void> {
-    await new Promise(resolve => setTimeout(resolve, 200));
+  // PUT /api/roles/{roleId}/permissions/{permissionId} - Update a permission in a role
+  async updateRolePermission(roleId: string, permissionId: string, permission: {
+    permission: string;
+    value: boolean | number;
+  }): Promise<void> {
+    await this.request<void>(`roles/${roleId}/permissions/${permissionId}`, {
+      method: 'PUT',
+      body: JSON.stringify(permission),
+    });
+  }
+
+  // Helper method to get role statistics
+  async getStats(): Promise<{
+    total: number;
+    activeRoles: number;
+    totalPermissions: number;
+    averagePermissionsPerRole: number;
+  }> {
+    const roles = await this.findAll();
+    const totalPermissions = roles.reduce((sum, role) => sum + role.permissions.length, 0);
     
-    const role = this.roles.find(r => r.id === roleId);
-    if (!role) {
-      throw new Error('Role not found');
+    return {
+      total: roles.length,
+      activeRoles: roles.length, // Assuming all fetched roles are active
+      totalPermissions,
+      averagePermissionsPerRole: roles.length > 0 ? Math.round(totalPermissions / roles.length) : 0,
+    };
+  }
+
+  // Helper method to search roles by name or label
+  async searchRoles(query: string): Promise<Role[]> {
+    const roles = await this.findAll();
+    const searchTerm = query.toLowerCase();
+    
+    return roles.filter(role => 
+      role.name.toLowerCase().includes(searchTerm) ||
+      role.label.toLowerCase().includes(searchTerm)
+    );
+  }
+
+  // Helper method to get roles with specific permission
+  async getRolesWithPermission(permissionId: string): Promise<Role[]> {
+    const roles = await this.findAll();
+    
+    return roles.filter(role => 
+      role.permissions.some(p => p.permission === permissionId)
+    );
+  }
+
+  // Helper method to validate role data before creation/update
+  validateRoleData(roleData: {
+    name?: string;
+    label?: string;
+    permissions?: Array<{
+      permission: string;
+      value: boolean | number;
+    }>;
+  }): { isValid: boolean; errors: string[] } {
+    const errors: string[] = [];
+
+    if (roleData.name !== undefined) {
+      if (!roleData.name || roleData.name.trim().length === 0) {
+        errors.push('Role name is required');
+      }
+      if (roleData.name && roleData.name.length > 50) {
+        errors.push('Role name must be less than 50 characters');
+      }
     }
 
-    const existingPermissionIndex = role.permissions.findIndex(p => p.id === permissionId);
-    
-    if (existingPermissionIndex >= 0) {
-      // Update existing permission
-      role.permissions[existingPermissionIndex].updatedAt = new Date();
-    } else {
-      // Add new permission
-      await this.addPermissionToRole(roleId, permissionId);
+    if (roleData.label !== undefined) {
+      if (!roleData.label || roleData.label.trim().length === 0) {
+        errors.push('Role label is required');
+      }
+      if (roleData.label && roleData.label.length > 100) {
+        errors.push('Role label must be less than 100 characters');
+      }
     }
-    
-    role.updatedAt = new Date();
+
+    if (roleData.permissions !== undefined) {
+      if (!Array.isArray(roleData.permissions)) {
+        errors.push('Permissions must be an array');
+      } else {
+        roleData.permissions.forEach((permission, index) => {
+          if (!permission.permission || typeof permission.permission !== 'string') {
+            errors.push(`Permission ${index + 1}: permission ID is required and must be a string`);
+          }
+          if (permission.value === undefined || (typeof permission.value !== 'boolean' && typeof permission.value !== 'number')) {
+            errors.push(`Permission ${index + 1}: value is required and must be a boolean or number`);
+          }
+        });
+      }
+    }
+
+    return {
+      isValid: errors.length === 0,
+      errors
+    };
   }
 }
 
