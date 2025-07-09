@@ -50,6 +50,7 @@ export const NotificationForm: React.FC<NotificationFormProps> = ({
       setFormData({
         title: notification.title,
         message: notification.message,
+        //@ts-ignore
         area: notification.area,
         roles: notification.roles.length > 0 ? notification.roles : [""],
         startDate: notification.startDate

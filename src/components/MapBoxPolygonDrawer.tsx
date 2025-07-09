@@ -282,6 +282,7 @@ const MapboxPolygonDrawer: React.FC<Props> = ({
         const bounds = new mapboxgl.LngLatBounds();
         parsed.forEach((polygonCoords) => {
           polygonCoords[0].forEach((coord: number[]) => {
+            //@ts-ignore
             bounds.extend(coord);
           });
         });
