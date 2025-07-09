@@ -25,7 +25,7 @@ export const NotificationForm: React.FC<NotificationFormProps> = ({
     title: "",
     message: "",
     area: {
-      type: "Polygon" as const,
+      type: "MultiPolygon" as const,
       coordinates: [
         [
           [73.056, 33.684],
@@ -125,7 +125,7 @@ export const NotificationForm: React.FC<NotificationFormProps> = ({
         setCoordinateInput(coordString);
         setFormData((prev) => ({
           ...prev,
-          area: { type: "Polygon", coordinates: parsed },
+          area: { type: "MultiPolygon", coordinates: parsed },
         }));
       } catch (error) {
         console.warn("Invalid mapbox coordinates");
@@ -148,6 +148,7 @@ export const NotificationForm: React.FC<NotificationFormProps> = ({
         ? new Date(formData.endDate).toISOString()
         : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
     };
+    //@ts-ignore
     onSubmit(data);
   };
 

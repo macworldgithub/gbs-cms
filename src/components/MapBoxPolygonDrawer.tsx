@@ -22,6 +22,8 @@ const MapboxPolygonDrawer: React.FC<Props> = ({
   const map = useRef<mapboxgl.Map | null>(null);
   const draw = useRef<MapboxDraw | null>(null);
   const [isMapLoaded, setIsMapLoaded] = useState(false);
+  const [features, setFeatures] = useState<any[]>([]);
+  const [activePolygonIndex, setActivePolygonIndex] = useState(0);
 
   useEffect(() => {
     if (!mapContainer.current || map.current) return;
@@ -175,18 +177,21 @@ const MapboxPolygonDrawer: React.FC<Props> = ({
       if (!draw.current) return;
 
       const data = draw.current.getAll();
-      console.log("Draw data:", data);
+      const polygons = data.features.filter(
+        (f) => f.geometry.type === "Polygon"
+      );
 
-      if (data.features.length > 0) {
-        const feature = data.features[0];
-        if (feature.geometry.type === "Polygon") {
-          const coords = feature.geometry.coordinates;
-          console.log("Setting coordinates:", coords);
-          setCoordinates(JSON.stringify(coords));
-        }
+      setFeatures(polygons);
+
+      if (polygons.length > 0) {
+        setActivePolygonIndex(polygons.length - 1);
+        setCoordinates(
+          //@ts-ignore
+          JSON.stringify(polygons.map((p) => p.geometry.coordinates))
+        );
       } else {
-        console.log("No features, clearing coordinates");
         setCoordinates("");
+        setActivePolygonIndex(0);
       }
     };
 
@@ -202,31 +207,42 @@ const MapboxPolygonDrawer: React.FC<Props> = ({
 
       try {
         console.log("Loading existing coordinates:", coordinates);
-        const parsed = JSON.parse(coordinates);
-
-        const feature = {
-          type: "Feature" as const,
-          geometry: {
-            type: "Polygon" as const,
-            coordinates: parsed,
-          },
-          properties: {},
-        };
+        const parsed: number[][][][] = JSON.parse(coordinates); // MultiPolygon
 
         draw.current.deleteAll();
-        draw.current.add(feature);
-        console.log("Polygon loaded successfully");
 
-        // Fit map to polygon bounds
-        if (parsed[0] && parsed[0].length > 0) {
-          const bounds = new mapboxgl.LngLatBounds();
-          parsed[0].forEach((coord: number[]) => {
-            bounds.extend([coord[0], coord[1]]);
+        // Store all polygons' features
+        const featuresArray: any[] = [];
+
+        parsed.forEach((polygonCoords) => {
+          const feature = {
+            type: "Feature" as const,
+            geometry: {
+              type: "Polygon" as const,
+              coordinates: polygonCoords, // [[[lng, lat], ...]]
+            },
+            properties: {},
+          };
+          draw.current?.add(feature);
+          featuresArray.push(feature);
+        });
+
+        console.log("Polygons loaded successfully");
+
+        // Fit bounds to ALL polygons
+        const bounds = new mapboxgl.LngLatBounds();
+        parsed.forEach((polygonCoords) => {
+          polygonCoords[0].forEach((coord: number[]) => {
+            //@ts-ignore
+            bounds.extend(coord);
           });
-          map.current?.fitBounds(bounds, { padding: 50 });
-        }
+        });
+        map.current?.fitBounds(bounds, { padding: 50 });
+
+        setFeatures(draw.current.getAll().features); // Set features state
+        setActivePolygonIndex(0); // Reset active view
       } catch (err) {
-        console.error("Error loading polygon:", err);
+        console.error("Error loading polygons:", err);
       }
     };
 
@@ -245,35 +261,56 @@ const MapboxPolygonDrawer: React.FC<Props> = ({
     if (coordinates) {
       try {
         console.log("External coordinates update:", coordinates);
-        const parsed = JSON.parse(coordinates);
-
-        const feature = {
-          type: "Feature" as const,
-          geometry: {
-            type: "Polygon" as const,
-            coordinates: parsed,
-          },
-          properties: {},
-        };
+        const parsed: number[][][][] = JSON.parse(coordinates); // MultiPolygon format
 
         draw.current.deleteAll();
-        draw.current.add(feature);
 
-        // Fit map to polygon bounds
-        if (parsed[0] && parsed[0].length > 0) {
-          const bounds = new mapboxgl.LngLatBounds();
-          parsed[0].forEach((coord: number[]) => {
-            bounds.extend([coord[0], coord[1]]);
+        // Add each polygon from MultiPolygon
+        parsed.forEach((polygonCoords) => {
+          const feature = {
+            type: "Feature" as const,
+            geometry: {
+              type: "Polygon" as const,
+              coordinates: polygonCoords, // [[[lng, lat], ...]]
+            },
+            properties: {},
+          };
+          draw.current?.add(feature);
+        });
+
+        // Fit map to bounds of all polygons
+        const bounds = new mapboxgl.LngLatBounds();
+        parsed.forEach((polygonCoords) => {
+          polygonCoords[0].forEach((coord: number[]) => {
+            bounds.extend(coord);
           });
-          map.current?.fitBounds(bounds, { padding: 50 });
-        }
+        });
+        map.current?.fitBounds(bounds, { padding: 50 });
+
+        // Optionally: update feature list & reset active index
+        setFeatures(draw.current.getAll().features);
+        setActivePolygonIndex(0);
       } catch (err) {
-        console.error("Error updating polygon:", err);
+        console.error("Error updating polygons:", err);
       }
     } else {
       draw.current.deleteAll();
     }
   }, [coordinates, isMapLoaded]);
+
+  useEffect(() => {
+    if (!map.current || features.length === 0) return;
+
+    const current = features[activePolygonIndex];
+    if (!current || !current.geometry.coordinates[0]) return;
+
+    const bounds = new mapboxgl.LngLatBounds();
+    current.geometry.coordinates[0].forEach((coord: number[]) => {
+      //@ts-ignore
+      bounds.extend(coord);
+    });
+    map.current.fitBounds(bounds, { padding: 50 });
+  }, [activePolygonIndex, features]);
 
   return (
     <div className="space-y-3">
@@ -285,6 +322,30 @@ const MapboxPolygonDrawer: React.FC<Props> = ({
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
         <div className="flex items-start space-x-2">
           <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
+          {features.length > 1 && (
+            <div className="flex justify-center space-x-4 mt-2">
+              <button
+                type="button"
+                onClick={() =>
+                  setActivePolygonIndex(
+                    (i) => (i - 1 + features.length) % features.length
+                  )
+                }
+                className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 text-sm"
+              >
+                ← Previous
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  setActivePolygonIndex((i) => (i + 1) % features.length)
+                }
+                className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 text-sm"
+              >
+                Next →
+              </button>
+            </div>
+          )}
           <div className="text-sm text-blue-800">
             <p className="font-medium mb-1">How to use:</p>
             <ul className="space-y-1 text-xs">

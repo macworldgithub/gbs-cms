@@ -59,13 +59,24 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
   };
 
   const getCoordinatesSummary = () => {
-    const coords = notification.area.coordinates[0];
-    if (coords.length > 0) {
-      return `${coords.length - 1} points (${coords[0][0].toFixed(
-        3
-      )}, ${coords[0][1].toFixed(3)})`;
+    const allPolygons = notification.area.coordinates;
+
+    if (!Array.isArray(allPolygons) || allPolygons.length === 0) {
+      return "No coordinates";
     }
-    return "No coordinates";
+
+    const summaries = allPolygons.map((polygon, index) => {
+      const coords = polygon[0]; // First ring of polygon
+      if (!coords || coords.length === 0)
+        return `Polygon ${index + 1}: No points`;
+
+      return `Polygon ${index + 1}: ${
+        coords.length - 1
+        //@ts-ignore
+      } points (${coords[0][0]?.toFixed(3)}, ${coords[0][1]?.toFixed(3)})`;
+    });
+
+    return summaries.join(" | ");
   };
 
   return (
