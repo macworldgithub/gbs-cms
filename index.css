@@ -1,0 +1,147 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Mapbox GL Draw Styles */
+.mapbox-gl-draw_ctrl-draw-btn {
+  background-image: url('data:image/svg+xml;charset=utf-8,%3Csvg width="20" height="20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"%3E%3Cpath fill="%23404040" d="M10 0C4.5 0 0 4.5 0 10s4.5 10 10 10 10-4.5 10-10S15.5 0 10 0zm5 11h-4v4H9v-4H5V9h4V5h2v4h4v2z"/%3E%3C/svg%3E');
+}
+
+.mapbox-gl-draw_polygon {
+  background-image: url('data:image/svg+xml;charset=utf-8,%3Csvg width="20" height="20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"%3E%3Cpath fill="%23404040" d="M10 0l5 5-5 5-5-5 5-5zm0 10l5 5-5 5-5-5 5-5z"/%3E%3C/svg%3E');
+}
+
+.mapbox-gl-draw_trash {
+  background-image: url('data:image/svg+xml;charset=utf-8,%3Csvg width="20" height="20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"%3E%3Cpath fill="%23404040" d="M6 2l2-2h4l2 2h4v2H2V2h4zM3 6h14l-1 14H4L3 6zm2 3v7h1V9H5zm3 0v7h1V9H8zm3 0v7h1V9h-1zm3 0v7h1V9h-1z"/%3E%3C/svg%3E');
+}
+
+.mapboxgl-ctrl-geocoder {
+  min-width: 300px;
+  margin-top: 10px;
+  z-index: 2;
+}
+
+.mapbox-gl-draw_ctrl-draw-btn {
+  display: block;
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 4px;
+  background-color: #fff;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 20px 20px;
+  cursor: pointer;
+  margin-bottom: 6px;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
+}
+
+.mapbox-gl-draw_ctrl-draw-btn:hover {
+  background-color: #f8f8f8;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.15);
+}
+
+.mapbox-gl-draw_ctrl-draw-btn.mapbox-gl-draw_active {
+  background-color: #3bb2d0;
+  box-shadow: 0 0 0 2px rgba(59, 178, 208, 0.4);
+}
+
+.mapbox-gl-draw_ctrl {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 1;
+}
+
+/* Polygon and line styles */
+.mapbox-gl-draw_polygon.mapbox-gl-draw_active {
+  fill: rgba(59, 178, 208, 0.2);
+  stroke: #3bb2d0;
+  stroke-width: 2;
+}
+
+.mapbox-gl-draw_polygon.mapbox-gl-draw_inactive {
+  fill: rgba(59, 178, 208, 0.1);
+  stroke: #3bb2d0;
+  stroke-width: 1;
+}
+
+.mapbox-gl-draw_line.mapbox-gl-draw_active {
+  stroke: #3bb2d0;
+  stroke-width: 2;
+}
+
+.mapbox-gl-draw_point.mapbox-gl-draw_active {
+  fill: #3bb2d0;
+  stroke: #fff;
+  stroke-width: 2;
+}
+
+.mapbox-gl-draw_point.mapbox-gl-draw_inactive {
+  fill: #3bb2d0;
+  stroke: #fff;
+  stroke-width: 1;
+}
+
+@layer base {
+  body {
+    font-family: "Inter", system-ui, -apple-system, sans-serif;
+  }
+}
+
+@layer components {
+  .notification-card {
+    @apply bg-white rounded-lg shadow-sm border border-gray-200 p-6 transition-all duration-200 hover:shadow-md;
+  }
+
+  .btn-primary {
+    @apply bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2;
+  }
+
+  .btn-secondary {
+    @apply bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2;
+  }
+
+  .form-input {
+    @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Loading animation */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* Smooth transitions */
+* {
+  transition-property: color, background-color, border-color,
+    text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter,
+    backdrop-filter;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}

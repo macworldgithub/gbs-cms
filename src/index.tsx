@@ -7,6 +7,7 @@ import { EventProvider } from "./contexts/EventContext";
 import { ChatProvider } from "./contexts/ChatContext";
 import { RoleProvider } from "./contexts/RoleContext";
 import { PermissionProvider } from "./contexts/PermissionContext";
+import "../index.css";
 
 createRoot(document.getElementById("app") as HTMLElement).render(
   <StrictMode>
@@ -23,5 +24,5 @@ createRoot(document.getElementById("app") as HTMLElement).render(
         </EventProvider>
       </LanguageProvider>
     </AppProvider>
-  </StrictMode>,
+  </StrictMode>
 );
