@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Role, RoleContextType, RoleFormData, BulkRoleData } from '../types';
+import { Role, RoleFormData, BulkRoleData, RoleContextType } from '../types/';
 import { roleService } from '../services/roleService';
+
 
 const RoleContext = createContext<RoleContextType | undefined>(undefined);
 
@@ -53,7 +54,8 @@ export const RoleProvider: React.FC<RoleProviderProps> = ({ children }) => {
       setLoading(true);
       setError(null);
       const updatedRole = await roleService.updateRole(id, roleData);
-      setRoles(prev => prev.map(role => role.id === id ? updatedRole : role));
+      setRoles(prev => prev.map(role => role._id === id ? updatedRole : role));
+
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update role');
       throw err;
@@ -62,12 +64,27 @@ export const RoleProvider: React.FC<RoleProviderProps> = ({ children }) => {
     }
   };
 
+  const getRoleById = async (id: string): Promise<Role> => {
+  try {
+    setLoading(true);
+    setError(null);
+    const role = await roleService.getRoleById(id);
+    return role;
+  } catch (err) {
+    setError(err instanceof Error ? err.message : 'Failed to fetch role details');
+    throw err;
+  } finally {
+    setLoading(false);
+  }
+};
+
+
   const deleteRole = async (id: string) => {
     try {
       setLoading(true);
       setError(null);
       await roleService.deleteRole(id);
-      setRoles(prev => prev.filter(role => role.id !== id));
+      setRoles(prev => prev.filter(role => role._id !== id));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete role');
       throw err;
@@ -127,6 +144,7 @@ export const RoleProvider: React.FC<RoleProviderProps> = ({ children }) => {
     removePermissionFromRole,
     createBulkRoles,
     fetchRoles,
+    getRoleById,
   };
 
   return (

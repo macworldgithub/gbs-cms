@@ -2,12 +2,14 @@ import React, { useState } from 'react';
 import { PlusIcon, PencilIcon, TrashIcon, SaveIcon, XIcon, ShieldIcon, UsersIcon } from 'lucide-react';
 import { useRole } from '../../contexts/RoleContext';
 import { usePermission } from '../../contexts/PermissionContext';
-import { RoleFormData, BulkRoleData } from '../../types';
+import { RoleFormData, BulkRoleData, Role, } from '../../types/role';
 import { Button } from '../ui/button';
 import { Card } from '../ui/card';
+import { toast } from "react-toastify";
+import { RoleDrawer } from './RoleDrawer';
 
 export const RoleManager: React.FC = () => {
-  const { roles, loading, error, createRole, updateRole, deleteRole, addPermissionToRole, removePermissionFromRole, createBulkRoles } = useRole();
+  const { roles, loading, error, createRole, updateRole, deleteRole, addPermissionToRole, removePermissionFromRole, createBulkRoles, getRoleById } = useRole();
   const { permissions } = usePermission();
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -22,6 +24,19 @@ export const RoleManager: React.FC = () => {
   const [bulkData, setBulkData] = useState<BulkRoleData[]>([
     { name: '', description: '', permissionNames: [] }
   ]);
+
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [drawerRole, setDrawerRole] = useState<Role | null>(null);
+  const openRoleDrawer = async (id: string) => {
+    try {
+      const roleDetails = await getRoleById(id);
+      console.log("Fetched role:", roleDetails);
+      setDrawerRole(roleDetails);
+      setDrawerOpen(true);
+    } catch (err) {
+      toast.error("Failed to fetch role details");
+    }
+  };
 
   const resetForm = () => {
     setFormData({
@@ -39,35 +54,73 @@ export const RoleManager: React.FC = () => {
     try {
       if (editingId) {
         await updateRole(editingId, formData);
+        toast.success("Role updated successfully");
       } else {
         await createRole(formData);
+        toast.success("Role added successfully");
       }
       resetForm();
     } catch (err) {
-      console.error('Failed to save role:', err);
+      console.error("Failed to save role:", err);
+      toast.error("Failed to save role");
     }
   };
 
   const handleEdit = (role: any) => {
     setFormData({
       name: role.name,
-      description: role.description,
-      permissionIds: role.permissions.map((p: any) => p.id),
+      description: role.label,
+      permissionIds: role.permissions.map((p: any) => p.permission),
       isActive: role.isActive,
     });
-    setEditingId(role.id);
+    setEditingId(role._id); // MongoDB ID
     setIsAdding(true);
   };
 
-  const handleDelete = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this role?')) {
-      try {
-        await deleteRole(id);
-      } catch (err) {
-        console.error('Failed to delete role:', err);
+
+
+  const handleDelete = (id: string) => {
+    toast.info(
+      ({ closeToast }) => (
+        <div className="space-y-2">
+          <p className="font-semibold text-gray-900">
+            Are you sure you want to delete this role?
+          </p>
+          <div className="flex justify-end gap-2 pt-2">
+            <button
+              onClick={async () => {
+                try {
+                  await deleteRole(id);
+                  toast.success("Role deleted successfully");
+                } catch (err) {
+                  toast.error("Failed to delete role");
+                } finally {
+                  closeToast?.();
+                }
+              }}
+              className="bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700"
+            >
+              Yes, Delete
+            </button>
+            <button
+              onClick={closeToast}
+              className="bg-gray-200 px-3 py-1 rounded text-sm hover:bg-gray-300"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      ),
+      {
+        closeOnClick: false,
+        closeButton: false,
+        autoClose: false,
+        draggable: false,
       }
-    }
+    );
   };
+
+
 
   const handleBulkCreate = async () => {
     try {
@@ -76,7 +129,7 @@ export const RoleManager: React.FC = () => {
         alert('Please provide at least one valid role');
         return;
       }
-      
+
       await createBulkRoles(validRoles);
       setBulkData([{ name: '', description: '', permissionNames: [] }]);
       setShowBulkCreate(false);
@@ -264,7 +317,7 @@ export const RoleManager: React.FC = () => {
                 />
               </div>
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Permissions
@@ -333,19 +386,28 @@ export const RoleManager: React.FC = () => {
           <div className="flex items-center justify-center p-8">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#ec2227]"></div>
           </div>
-        ) : (
-          roles.map((role) => (
-            <Card key={role.id} className="p-4">
+        ) : (roles.map((role) => {
+          //@ts-ignore
+          const roleId = role._id;
+          console.log("Rendering role:", role);
+
+          return (
+            <Card key={roleId} className="p-4">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
                     <ShieldIcon className="w-5 h-5 text-[#ec2227]" />
-                    <h3 className="font-semibold text-gray-900">{role.name}</h3>
-                    <span className={`px-2 py-1 text-xs rounded-full ${
-                      role.isActive 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-red-100 text-red-800'
-                    }`}>
+                    <button
+                      onClick={() => openRoleDrawer(roleId)}
+                      className="font-semibold text-gray-900 hover:underline text-left"
+                    >
+                      {role.name}
+                    </button>
+
+                    <span className={`px-2 py-1 text-xs rounded-full ${role.isActive
+                      ? 'bg-green-100 text-green-800'
+                      : 'bg-red-100 text-red-800'
+                      }`}>
                       {role.isActive ? 'Active' : 'Inactive'}
                     </span>
                   </div>
@@ -366,7 +428,7 @@ export const RoleManager: React.FC = () => {
                 </div>
                 <div className="flex items-center gap-2 ml-4">
                   <Button
-                    onClick={() => setSelectedRole(selectedRole === role.id ? null : role.id)}
+                    onClick={() => setSelectedRole(selectedRole === roleId ? null : roleId)}
                     variant="outline"
                     size="sm"
                   >
@@ -380,7 +442,7 @@ export const RoleManager: React.FC = () => {
                     <PencilIcon className="w-4 h-4" />
                   </Button>
                   <Button
-                    onClick={() => handleDelete(role.id)}
+                    onClick={() => handleDelete(roleId)}
                     variant="outline"
                     size="sm"
                     className="text-red-600 hover:text-red-700"
@@ -389,9 +451,9 @@ export const RoleManager: React.FC = () => {
                   </Button>
                 </div>
               </div>
-              
+
               {/* Permission Management */}
-              {selectedRole === role.id && (
+              {selectedRole === roleId && (
                 <div className="mt-4 pt-4 border-t">
                   <h4 className="font-medium mb-3">Manage Permissions</h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
@@ -402,7 +464,7 @@ export const RoleManager: React.FC = () => {
                           <input
                             type="checkbox"
                             checked={hasPermission}
-                            onChange={() => handlePermissionToggle(role.id, permission.id, hasPermission)}
+                            onChange={() => handlePermissionToggle(roleId, permission.id, hasPermission)}
                             className="rounded"
                           />
                           <span className="text-sm">{permission.name}</span>
@@ -413,8 +475,10 @@ export const RoleManager: React.FC = () => {
                 </div>
               )}
             </Card>
-          ))
-        )}
+          );
+        }))
+        }
+        <RoleDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} role={drawerRole} />
       </div>
     </div>
   );
