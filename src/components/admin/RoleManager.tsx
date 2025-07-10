@@ -7,6 +7,7 @@ import { Button } from '../ui/button';
 import { Card } from '../ui/card';
 import { toast } from "react-toastify";
 import { RoleDrawer } from './RoleDrawer';
+import { roleService } from '../../services/roleService';
 
 export const RoleManager: React.FC = () => {
   const { roles, loading, error, createRole, updateRole, deleteRole, addPermissionToRole, removePermissionFromRole, createBulkRoles, getRoleById } = useRole();
@@ -15,6 +16,8 @@ export const RoleManager: React.FC = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showBulkCreate, setShowBulkCreate] = useState(false);
   const [selectedRole, setSelectedRole] = useState<string | null>(null);
+  const [drawerRole, setDrawerRole] = useState<Role | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const [formData, setFormData] = useState<RoleFormData>({
     name: '',
     description: '',
@@ -25,18 +28,20 @@ export const RoleManager: React.FC = () => {
     { name: '', description: '', permissionNames: [] }
   ]);
 
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [drawerRole, setDrawerRole] = useState<Role | null>(null);
-  const openRoleDrawer = async (id: string) => {
-    try {
-      const roleDetails = await getRoleById(id);
-      console.log("Fetched role:", roleDetails);
-      setDrawerRole(roleDetails);
-      setDrawerOpen(true);
-    } catch (err) {
-      toast.error("Failed to fetch role details");
-    }
-  };
+
+const handleRoleClick = async (roleId: string) => {
+  try {
+    const role = await roleService.getRoleById(roleId); 
+    if (!role) return toast.error("Role not found");
+    setDrawerRole(role);
+    setDrawerOpen(true);
+  } catch (err) {
+    console.error("Error fetching role:", err);
+    toast.error("Failed to fetch role details");
+  }
+};
+
+
 
   const resetForm = () => {
     setFormData({
@@ -398,7 +403,7 @@ export const RoleManager: React.FC = () => {
                   <div className="flex items-center gap-3 mb-2">
                     <ShieldIcon className="w-5 h-5 text-[#ec2227]" />
                     <button
-                      onClick={() => openRoleDrawer(roleId)}
+                      onClick={() => handleRoleClick(roleId)}
                       className="font-semibold text-gray-900 hover:underline text-left"
                     >
                       {role.name}
@@ -478,7 +483,12 @@ export const RoleManager: React.FC = () => {
           );
         }))
         }
-        <RoleDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} role={drawerRole} />
+        <RoleDrawer
+          open={drawerOpen}
+          onClose={() => setDrawerOpen(false)}
+          role={drawerRole}
+        />
+
       </div>
     </div>
   );

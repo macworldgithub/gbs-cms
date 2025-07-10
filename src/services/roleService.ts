@@ -1,126 +1,50 @@
+import axios from 'axios';
 import { Role, RoleFormData } from '../types';
+
+const baseUrl = import.meta.env.VITE_API_URL ?? '';
+
+if (!baseUrl) {
+  throw new Error('Base URL not set. Check your .env.local file.');
+}
 
 class RoleService {
 
   async createRole(roleData: RoleFormData): Promise<Role> {
-    const baseUrl = import.meta.env.VITE_API_URL ?? '';
-
-    if (!baseUrl) {
-      throw new Error('Base URL not set. Check your .env.local file.');
-    }
-
-    const response = await fetch(`${baseUrl}/roles`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        name: roleData.name,
-        label: roleData.description
-      }),
+    const response = await axios.post(`${baseUrl}/roles`, {
+      name: roleData.name,
+      label: roleData.description,
     });
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Failed to create role');
-    }
-
-    const data = await response.json();
-    return data as Role;
+    return response.data as Role;
   }
 
   async getAllRoles(): Promise<Role[]> {
-    const baseUrl = import.meta.env.VITE_API_URL ?? '';
-
-    if (!baseUrl) {
-      throw new Error('Base URL not set. Check your .env.local file.');
-    }
-
-    const response = await fetch(`${baseUrl}/roles`);
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Failed to fetch roles');
-    }
-
-    const data = await response.json();
-    return data as Role[];
+    const response = await axios.get(`${baseUrl}/roles`);
+    return response.data as Role[];
   }
 
   async deleteRole(id: string): Promise<void> {
-    const baseUrl = import.meta.env.VITE_API_URL ?? '';
-    if (!baseUrl) throw new Error('Base URL not set. Check your .env.local file.');
-
-    const response = await fetch(`${baseUrl}/roles/${id}`, {
-      method: 'DELETE',
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Failed to delete role');
-    }
+    await axios.delete(`${baseUrl}/roles/${id}`);
   }
 
   async updateRole(id: string, roleData: Partial<RoleFormData>): Promise<Role> {
-    const baseUrl = import.meta.env.VITE_API_URL ?? '';
-    if (!baseUrl) throw new Error('Base URL not set. Check your .env.local file.');
-
-    const response = await fetch(`${baseUrl}/roles/${id}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        name: roleData.name,
-        label: roleData.description, 
-        permissionIds: roleData.permissionIds,
-        isActive: roleData.isActive,
-      }),
+    const response = await axios.put(`${baseUrl}/roles/${id}`, {
+      name: roleData.name,
+      label: roleData.description,
+      permissionIds: roleData.permissionIds,
+      isActive: roleData.isActive,
     });
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Failed to update role');
-    }
-
-    const data = await response.json();
-    return data as Role;
+    return response.data as Role;
   }
-
 
   async getRoleById(id: string): Promise<Role> {
-  const baseUrl = import.meta.env.VITE_API_URL ?? '';
-  if (!baseUrl) throw new Error('Base URL not set. Check your .env.local file.');
-
-  const response = await fetch(`${baseUrl}/roles/${id}`);
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.message || 'Failed to fetch role by ID');
+    const response = await axios.get(`${baseUrl}/roles/${id}`);
+    return response.data as Role;
   }
 
-  const data = await response.json();
-  return data as Role;
 }
 
-}
-
-// PUT /roles/{id} - Update a role
-// async updateRole(id: string, roleData: Partial<RoleFormData>): Promise<Role> {
-//   await new Promise(resolve => setTimeout(resolve, 300));
-
-//   const index = this.roles.findIndex(role => role.id === id);
-//   if (index === -1) {
-//     throw new Error('Role not found');
-//   }
-
-//   this.roles[index] = {
-//     ...this.roles[index],
-//     ...roleData,
-//     updatedAt: new Date(),
-//   };
-
-//   return this.roles[index];
-// }
 
 
 

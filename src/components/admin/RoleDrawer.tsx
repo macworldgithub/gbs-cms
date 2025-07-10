@@ -26,7 +26,10 @@ export const RoleDrawer: React.FC<RoleDrawerProps> = ({ open, onClose, role }) =
         <p><strong>Permissions:</strong></p>
         <ul className="list-disc pl-6">
           {role.permissions.map((p) => (
-            <li key={p._id}>{p.permission}</li>
+            <li key={p._id}>
+              {p.permission?.label ?? p.permission?.name ?? "Unknown Permission"} — 
+              <span className="ml-1 font-mono text-xs text-gray-500">{String(p.value)}</span>
+            </li>
           ))}
         </ul>
       </div>
