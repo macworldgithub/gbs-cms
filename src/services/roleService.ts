@@ -8,7 +8,6 @@ if (!baseUrl) {
 }
 
 class RoleService {
-
   async createRole(roleData: RoleFormData): Promise<Role> {
     const response = await axios.post(`${baseUrl}/roles`, {
       name: roleData.name,
@@ -43,7 +42,31 @@ class RoleService {
     return response.data as Role;
   }
 
+  async addPermissionToRole(roleId: string, permissionNameOrId: string): Promise<void> {
+    await axios.post(`${baseUrl}/roles/${roleId}/permissions`, {
+      permission: permissionNameOrId,
+    });
+  }
+  
+
+
+  async removePermissionFromRole(roleId: string, permissionIdOrName: string): Promise<void> {
+  await axios.delete(`${baseUrl}/roles/${roleId}/permissions/${permissionIdOrName}`);
 }
+
+
+async updatePermissionOfRole(roleId: string, permissionId: string, value: boolean = true): Promise<void> {
+  await axios.put(`${baseUrl}/roles/${roleId}/permissions/${permissionId}`, {
+    value,
+  });
+}
+
+
+
+}
+
+export const roleService = new RoleService();
+
 
 
 
@@ -139,5 +162,3 @@ class RoleService {
 //   role.updatedAt = new Date();
 // }
 
-
-export const roleService = new RoleService();
