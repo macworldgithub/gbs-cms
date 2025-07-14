@@ -28,7 +28,13 @@ class PermissionService {
 
   // PUT /permissions/{id} - Update a permission
   async updatePermission(id: string, permissionData: Partial<PermissionFormData>): Promise<Permission> {
-    const response = await axios.put(`${baseUrl}/permissions/${id}`, permissionData);
+    const response = await axios.put(`${baseUrl}/permissions/${id}`, {
+      name: permissionData.name,
+      description: permissionData.description,
+      resource: permissionData.resource,
+      action: permissionData.action,
+      isActive: permissionData.isActive,
+    });
     return response.data as Permission;
   }
 

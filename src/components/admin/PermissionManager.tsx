@@ -4,6 +4,10 @@ import { usePermission } from '../../contexts/PermissionContext';
 import { PermissionFormData, BulkPermissionData } from '../../types';
 import { Button } from '../ui/button';
 import { Card } from '../ui/card';
+import { toast } from "react-toastify";
+import { PermissionDrawer } from './PermissionDrawer';
+import { permissionService } from '../../services/permissionService';
+import { Permission } from '../../types';
 
 export const PermissionManager: React.FC = () => {
   const { permissions, loading, error, createPermission, updatePermission, deletePermission, createBulkPermissions } = usePermission();
@@ -21,6 +25,9 @@ export const PermissionManager: React.FC = () => {
   const [bulkData, setBulkData] = useState<BulkPermissionData[]>([
     { name: '', description: '', resource: '', action: '' }
   ]);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [drawerPermission, setDrawerPermission] = useState<Permission | null>(null);
+  const [drawerLoading, setDrawerLoading] = useState(false);
 
   const resetForm = () => {
     setFormData({
@@ -39,12 +46,15 @@ export const PermissionManager: React.FC = () => {
     try {
       if (editingId) {
         await updatePermission(editingId, formData);
+        toast.success("Permission updated successfully");
       } else {
         await createPermission(formData);
+        toast.success("Permission added successfully");
       }
       resetForm();
     } catch (err) {
-      console.error('Failed to save permission:', err);
+      console.error("Failed to save permission:", err);
+      toast.error("Failed to save permission");
     }
   };
 
@@ -56,18 +66,50 @@ export const PermissionManager: React.FC = () => {
       action: permission.action,
       isActive: permission.isActive,
     });
-    setEditingId(permission.id);
+    setEditingId(permission.id || permission._id); // Use id or _id
     setIsAdding(true);
   };
 
-  const handleDelete = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this permission?')) {
-      try {
-        await deletePermission(id);
-      } catch (err) {
-        console.error('Failed to delete permission:', err);
+  const handleDelete = (id: string) => {
+    console.log("Deleting permission with id:", id);
+    toast.info(
+      ({ closeToast }) => (
+        <div className="space-y-2">
+          <p className="font-semibold text-gray-900">
+            Are you sure you want to delete this permission?
+          </p>
+          <div className="flex justify-end gap-2 pt-2">
+            <button
+              onClick={async () => {
+                try {
+                  await deletePermission(id);
+                  toast.success("Permission deleted successfully");
+                } catch (err) {
+                  toast.error("Failed to delete permission");
+                } finally {
+                  closeToast?.();
+                }
+              }}
+              className="bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700"
+            >
+              Yes, Delete
+            </button>
+            <button
+              onClick={closeToast}
+              className="bg-gray-200 px-3 py-1 rounded text-sm hover:bg-gray-300"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      ),
+      {
+        closeOnClick: false,
+        closeButton: false,
+        autoClose: false,
+        draggable: false,
       }
-    }
+    );
   };
 
   const handleBulkCreate = async () => {
@@ -100,6 +142,19 @@ export const PermissionManager: React.FC = () => {
     const updated = [...bulkData];
     updated[index] = { ...updated[index], [field]: value };
     setBulkData(updated);
+  };
+
+  const handlePermissionClick = async (permissionId: string) => {
+    setDrawerLoading(true);
+    setDrawerOpen(true);
+    try {
+      const permission = await permissionService.getPermissionById(permissionId);
+      setDrawerPermission(permission);
+    } catch (err) {
+      setDrawerPermission(null);
+    } finally {
+      setDrawerLoading(false);
+    }
   };
 
   const filteredPermissions = filterResource 
@@ -372,22 +427,22 @@ export const PermissionManager: React.FC = () => {
                   <div className="flex items-center gap-3 mb-2">
                     <ShieldCheckIcon className="w-5 h-5 text-[#ec2227]" />
                     <h3 className="font-semibold text-gray-900">{permission.name}</h3>
-                    <span className={`px-2 py-1 text-xs rounded-full ${
+                    {/* <span className={`px-2 py-1 text-xs rounded-full ${
                       permission.isActive 
                         ? 'bg-green-100 text-green-800' 
                         : 'bg-red-100 text-red-800'
                     }`}>
                       {permission.isActive ? 'Active' : 'Inactive'}
-                    </span>
+                    </span> */}
                   </div>
                   <p className="text-sm text-gray-600 mb-2">{permission.description}</p>
                   <div className="flex gap-2">
-                    <span className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded">
+                    {/* <span className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded">
                       Resource: {permission.resource}
-                    </span>
-                    <span className="px-2 py-1 text-xs bg-purple-100 text-purple-800 rounded">
+                    </span> */}
+                    {/* <span className="px-2 py-1 text-xs bg-purple-100 text-purple-800 rounded">
                       Action: {permission.action}
-                    </span>
+                    </span> */}
                   </div>
                 </div>
                 <div className="flex items-center gap-2 ml-4">
@@ -399,12 +454,19 @@ export const PermissionManager: React.FC = () => {
                     <PencilIcon className="w-4 h-4" />
                   </Button>
                   <Button
-                    onClick={() => handleDelete(permission.id)}
+                    onClick={() => handleDelete(permission.id || permission._id)}
                     variant="outline"
                     size="sm"
                     className="text-red-600 hover:text-red-700"
                   >
                     <TrashIcon className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    onClick={() => handlePermissionClick(permission.id || permission._id)}
+                    variant="outline"
+                    size="sm"
+                  >
+                    View
                   </Button>
                 </div>
               </div>
@@ -412,6 +474,12 @@ export const PermissionManager: React.FC = () => {
           ))
         )}
       </div>
+      <PermissionDrawer
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        permission={drawerPermission}
+        loading={drawerLoading}
+      />
     </div>
   );
 };

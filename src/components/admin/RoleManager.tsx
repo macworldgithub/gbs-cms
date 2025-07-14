@@ -66,7 +66,7 @@ const handleRoleClick = async (roleId: string) => {
       }
       resetForm();
     } catch (err) {
-      console.error("Failed to save role:", err);
+      console.error("Failed to save role:", err); 
       toast.error("Failed to save role");
     }
   };
@@ -124,6 +124,7 @@ const handleRoleClick = async (roleId: string) => {
       }
     );
   };
+
 
 
 

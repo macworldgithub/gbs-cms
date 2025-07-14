@@ -49,6 +49,7 @@ export interface Permission {
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
+  label:string;
 }
 
 export interface Event {
