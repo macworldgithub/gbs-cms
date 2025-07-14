@@ -31,40 +31,20 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
   const isActive =
     new Date(notification.startDate) <= new Date() &&
     new Date(notification.endDate) >= new Date();
-  const isPending = new Date(notification.startDate) > new Date();
-
-  const getStatusColor = () => {
-    if (isExpired) return "bg-gray-50 border-gray-200";
-    if (isActive) return "bg-green-50 border-green-200";
-    if (isPending) return "bg-yellow-50 border-yellow-200";
-    return "bg-blue-50 border-blue-200";
-  };
-
-  const getStatusText = () => {
-    if (isExpired) return "Expired";
-    if (isActive) return "Active";
-    if (isPending) return "Pending";
-    return "Unknown";
-  };
-
-  const getStatusTextColor = () => {
-    if (isExpired) return "text-gray-600";
-    if (isActive) return "text-green-600";
-    if (isPending) return "text-yellow-600";
-    return "text-blue-600";
-  };
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString();
   };
 
   const getCoordinatesSummary = () => {
-    const allPolygons = notification.area.coordinates;
+    // Check if notification.area exists and has coordinates
+    const allPolygons = notification?.area?.coordinates;
 
     if (!Array.isArray(allPolygons) || allPolygons.length === 0) {
-      return "No coordinates";
+      return "No coordinates available";
     }
 
+    // Map over each polygon in the coordinates array
     const summaries = allPolygons.map((polygon, index) => {
       const coords = polygon[0]; // First ring of polygon
       if (!coords || coords.length === 0)
@@ -72,7 +52,6 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
 
       return `Polygon ${index + 1}: ${
         coords.length - 1
-        //@ts-ignore
       } points (${coords[0][0]?.toFixed(3)}, ${coords[0][1]?.toFixed(3)})`;
     });
 
@@ -98,8 +77,6 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
               ${
                 isActive
                   ? "bg-green-100"
-                  : isPending
-                  ? "bg-yellow-100"
                   : isExpired
                   ? "bg-gray-100"
                   : "bg-blue-100"
@@ -117,11 +94,9 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
                 <span
                   className={`
                   inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                  ${getStatusTextColor()} bg-current bg-opacity-10
+                   bg-current bg-opacity-10
                 `}
-                >
-                  {getStatusText()}
-                </span>
+                ></span>
               </div>
 
               <p className="text-gray-600 mb-3 leading-relaxed">
