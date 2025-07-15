@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { PlusIcon, PencilIcon, TrashIcon, SaveIcon, XIcon, ShieldIcon, UsersIcon } from 'lucide-react';
+import { PlusIcon, PencilIcon, TrashIcon, SaveIcon, XIcon, ShieldIcon } from 'lucide-react';
 import { useRole } from '../../contexts/RoleContext';
 import { usePermission } from '../../contexts/PermissionContext';
-import { RoleFormData, BulkRoleData, Role, } from '../../types/role';
+import { RoleFormData, BulkRoleData, Role } from '../../types/role';
 import { Button } from '../ui/button';
 import { Card } from '../ui/card';
 import { toast } from "react-toastify";
@@ -10,7 +10,7 @@ import { RoleDrawer } from './RoleDrawer';
 import { roleService } from '../../services/roleService';
 
 export const RoleManager: React.FC = () => {
-  const { roles,setRoles, loading, error, createRole, updateRole, deleteRole, addPermissionToRole, removePermissionFromRole, createBulkRoles } = useRole();
+  const { roles, setRoles, loading, error, createRole, updateRole, deleteRole, addPermissionToRole, removePermissionFromRole, createBulkRoles } = useRole();
   const { permissions } = usePermission();
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -22,7 +22,6 @@ export const RoleManager: React.FC = () => {
     name: '',
     description: '',
     permissionIds: [],
-    isActive: true,
   });
   const [bulkData, setBulkData] = useState<BulkRoleData[]>([
     { name: '', description: '', permissionNames: [] }
@@ -46,64 +45,61 @@ export const RoleManager: React.FC = () => {
       name: '',
       description: '',
       permissionIds: [],
-      isActive: true,
     });
     setIsAdding(false);
     setEditingId(null);
   };
 
- const handleEdit = (role: Role) => {
-  setFormData({
-    name: role.name,
-    description: role.label,
-    permissionIds: role.permissions.map(p => p.permission?._id?.toString()).filter(Boolean),
-    isActive: role.isActive ?? true,
-  });
-  setEditingId(role._id);
-  setIsAdding(true);
-};
+  const handleEdit = (role: Role) => {
+    setFormData({
+      name: role.name,
+      description: role.label,
+      permissionIds: role.permissions.map(p => p.permission?._id?.toString()).filter(Boolean),
+    });
+    setEditingId(role._id);
+    setIsAdding(true);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  try {
-    if (!editingId) {
-      await createRole(formData);
-      toast.success("Role added successfully");
-    } else {
-    
-      await updateRole(editingId, {
-        name: formData.name,
-        description: formData.description,
-        isActive: formData.isActive,
-      });
+    e.preventDefault();
+    try {
+      if (!editingId) {
+        await createRole(formData);
+        toast.success("Role added successfully");
+      } else {
 
-      const existingRole = await roleService.getRoleById(editingId);
-      const existingIds = existingRole.permissions.map(p => p.permission?._id?.toString()).filter(Boolean);
+        await updateRole(editingId, {
+          name: formData.name,
+          description: formData.description,
+        });
 
-      const toAdd = formData.permissionIds.filter(id => !existingIds.includes(id));
-      const toRemove = existingIds.filter(id => !formData.permissionIds.includes(id));
+        const existingRole = await roleService.getRoleById(editingId);
+        const existingIds = existingRole.permissions.map(p => p.permission?._id?.toString()).filter(Boolean);
 
-      // Add new permissions
-      for (const pid of toAdd) {
-        await roleService.updatePermissionOfRole(editingId, pid, true);
+        const toAdd = formData.permissionIds.filter(id => !existingIds.includes(id));
+        const toRemove = existingIds.filter(id => !formData.permissionIds.includes(id));
+
+        // Add new permissions
+        for (const pid of toAdd) {
+          await roleService.updatePermissionOfRole(editingId, pid, true);
+        }
+
+        // Remove permissions
+        for (const pid of toRemove) {
+          await roleService.removePermissionFromRole(editingId, pid);
+        }
+
+        const updatedRoles = await roleService.getAllRoles();
+        setRoles(updatedRoles);
+
+        toast.success("Role updated successfully");
       }
-
-      // Remove permissions
-      for (const pid of toRemove) {
-        await roleService.removePermissionFromRole(editingId, pid);
-      }
-
-      const updatedRoles = await roleService.getAllRoles(); 
-      setRoles(updatedRoles); 
-
-      toast.success("Role updated successfully");
+      resetForm();
+    } catch (err) {
+      console.error("Failed to save role:", err);
+      toast.error("Failed to save role");
     }
-    resetForm();
-  } catch (err) {
-    console.error("Failed to save role:", err);
-    toast.error("Failed to save role");
-  }
-};
+  };
 
   const handleDelete = (id: string) => {
     toast.info(
@@ -146,23 +142,46 @@ export const RoleManager: React.FC = () => {
     );
   };
 
+ const handleBulkCreate = async () => {
+  console.log("handleBulkCreate called");
+  try {
+    const validRoles = bulkData.filter(role => role.name.trim() && role.description.trim());
 
-
-  const handleBulkCreate = async () => {
-    try {
-      const validRoles = bulkData.filter(role => role.name.trim() && role.description.trim());
-      if (validRoles.length === 0) {
-        alert('Please provide at least one valid role');
-        return;
-      }
-
-      await createBulkRoles(validRoles);
-      setBulkData([{ name: '', description: '', permissionNames: [] }]);
-      setShowBulkCreate(false);
-    } catch (err) {
-      console.error('Failed to create bulk roles:', err);
+    if (validRoles.length === 0) {
+      toast.error('Please provide at least one valid role');
+      return;
     }
-  };
+
+    const safeRoles = validRoles.map(role => ({
+      name: role.name.trim(),
+      label: role.description.trim(),
+      permissions: role.permissionNames
+        .map(name => {
+          const matchedPermission = permissions.find(p => p.name === name);
+          if (!matchedPermission) {
+            console.warn(`Permission name "${name}" not found.`);
+            return null;
+          }
+          return {
+            name: matchedPermission._id, // backend expects the permission _id
+            value: true,
+          };
+        })
+        .filter(Boolean), // remove nulls (unmatched names)
+    }));
+
+    console.log("Sending to API:", safeRoles);
+
+    await roleService.createBulkRoles(safeRoles);
+    setBulkData([{ name: '', description: '', permissionNames: [] }]);
+    setShowBulkCreate(false);
+    toast.success("Roles created successfully");
+  } catch (err) {
+    console.error('Failed to create bulk roles:', err);
+    toast.error("Bulk role creation failed");
+  }
+};
+
 
   const addBulkRole = () => {
     setBulkData([...bulkData, { name: '', description: '', permissionNames: [] }]);
@@ -192,9 +211,6 @@ export const RoleManager: React.FC = () => {
       addPermissionToRole(roleId, permissionId);  // This is where permissionId is likely undefined
     }
   };
-
-
-
 
   return (
     <div className="p-6">
@@ -235,7 +251,7 @@ export const RoleManager: React.FC = () => {
             <ShieldIcon className="w-8 h-8 text-[#ec2227]" />
           </div>
         </Card>
-        <Card className="p-4">
+        {/* <Card className="p-4">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Active Roles</p>
@@ -243,7 +259,7 @@ export const RoleManager: React.FC = () => {
             </div>
             <UsersIcon className="w-8 h-8 text-green-600" />
           </div>
-        </Card>
+        </Card> */}
         <Card className="p-4">
           <div className="flex items-center justify-between">
             <div>
@@ -379,19 +395,6 @@ export const RoleManager: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                id="isActive"
-                checked={formData.isActive}
-                onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                className="mr-2"
-              />
-              <label htmlFor="isActive" className="text-sm font-medium text-gray-700">
-                Active
-              </label>
-            </div>
-
             <div className="flex gap-2">
               <Button
                 type="submit"
@@ -434,12 +437,7 @@ export const RoleManager: React.FC = () => {
                       {role.name}
                     </button>
 
-                    <span className={`px-2 py-1 text-xs rounded-full ${role.isActive
-                      ? 'bg-green-100 text-green-800'
-                      : 'bg-red-100 text-red-800'
-                      }`}>
-                      {role.isActive ? 'Active' : 'Inactive'}
-                    </span>
+
                   </div>
                   <p className="text-sm text-gray-600 mb-3">{role.description}</p>
                   <div className="flex flex-wrap gap-1">

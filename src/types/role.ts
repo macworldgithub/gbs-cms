@@ -2,7 +2,6 @@ export interface Role {
   _id: string;
   name: string;
   label: string;
-  isActive: boolean;
   permissions: Array<{
     _id?: string; 
     permission: {
@@ -19,16 +18,17 @@ export interface Role {
 
 export interface RoleFormData {
   name: string;
-  description: string; // maps to `label`
+  description: string; 
   permissionIds: string[];
-  isActive: boolean;
 }
 
 export interface BulkRoleData {
   name: string;
-  description: string;
+  description?:string;
+  label?: string; 
   permissionNames: string[];
 }
+
 
 export interface RoleContextType {
   roles: Role[];
