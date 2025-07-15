@@ -92,6 +92,7 @@ export const NotificationForm: React.FC<NotificationFormProps> = ({
 
   const handleMapboxCoordinateChange = (coords: string) => {
     setMapboxCoordinates(coords);
+
     if (coords) {
       try {
         const parsed = JSON.parse(coords);
@@ -106,6 +107,13 @@ export const NotificationForm: React.FC<NotificationFormProps> = ({
       } catch (error) {
         console.warn("Invalid mapbox coordinates");
       }
+    } else {
+      // 🛠️ Ensure valid empty GeoJSON object is always sent
+      setCoordinateInput("");
+      setFormData((prev) => ({
+        ...prev,
+        area: { type: "MultiPolygon", coordinates: [] }, // ✅ safe empty structure
+      }));
     }
   };
 
