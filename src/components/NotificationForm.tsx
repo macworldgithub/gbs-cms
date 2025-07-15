@@ -7,6 +7,7 @@ import {
 } from "../types/notification";
 import MapboxPolygonDrawer from "./MapBoxPolygonDrawer";
 import { RoleSelector } from "./RoleSelector";
+import GlobeView from "./GlobeView";
 
 interface NotificationFormProps {
   notification?: Notification;
@@ -26,92 +27,66 @@ export const NotificationForm: React.FC<NotificationFormProps> = ({
     message: "",
     area: {
       type: "MultiPolygon" as const,
-      coordinates: [
-        [
-          [73.056, 33.684],
-          [73.057, 33.685],
-          [73.058, 33.684],
-          [73.056, 33.684],
-        ],
-      ],
+      coordinates: [],
     },
     roles: [""],
     startDate: "",
     endDate: "",
+    SendToAll: false, // Add this field for SendToAll
   });
 
   const [coordinateInput, setCoordinateInput] = useState("");
   const [mapboxCoordinates, setMapboxCoordinates] = useState("");
 
-  console.log("ly check", notification);
-
   useEffect(() => {
     if (notification) {
+      const { title, message, area, roles, startDate, endDate, SendToAll } =
+        notification;
+
       setFormData({
-        title: notification.title,
-        message: notification.message,
-        //@ts-ignore
-        area: notification.area,
-        roles: notification.roles.length > 0 ? notification.roles : [""],
-        startDate: notification.startDate
-          ? notification.startDate.split("T")[0] +
-            "T" +
-            notification.startDate.split("T")[1].substring(0, 5)
+        title,
+        message,
+        area,
+        roles: roles.length > 0 ? roles : [""],
+        startDate: startDate
+          ? `${startDate.split("T")[0]}T${startDate
+              .split("T")[1]
+              .substring(0, 5)}`
           : "",
-        endDate: notification.endDate
-          ? notification.endDate.split("T")[0] +
-            "T" +
-            notification.endDate.split("T")[1].substring(0, 5)
+        endDate: endDate
+          ? `${endDate.split("T")[0]}T${endDate.split("T")[1].substring(0, 5)}`
           : "",
+        SendToAll: SendToAll || false,
       });
 
-      // Convert coordinates back to string format
-      //@ts-ignore
-      let coordString = notification.area.coordinates[0]
-        .map((coord) => `${coord[0]},${coord[1]}`)
-        .join(";");
-      setCoordinateInput(coordString);
+      // Temporarily remove polygon data if SendToAll is true
+      if (SendToAll) {
+        setMapboxCoordinates("[]");
+        setCoordinateInput("");
+      } else {
+        const firstPolygon = area.coordinates?.[0]?.[0];
+        if (firstPolygon) {
+          const coordString = firstPolygon
+            .map((coord: number[]) => `${coord[0]},${coord[1]}`)
+            .join(";");
+          setCoordinateInput(coordString);
+        }
 
-      // Set mapbox coordinates
-      setMapboxCoordinates(JSON.stringify(notification.area.coordinates));
-      // Convert coordinates back to string format
-      //@ts-ignore
-      coordString = notification.area.coordinates[0]
-        .map((coord) => `${coord[0]},${coord[1]}`)
-        .join(";");
-      setCoordinateInput(coordString);
-
-      // Set mapbox coordinates
-      setMapboxCoordinates(JSON.stringify(notification.area.coordinates));
+        setMapboxCoordinates(JSON.stringify(area.coordinates));
+      }
     } else {
-      // Set default coordinates for new notifications
-      //@ts-ignore
-      let defaultCoords = [
-        [
-          [73.056, 33.684],
-          [73.057, 33.685],
-          [73.058, 33.684],
-          [73.056, 33.684],
-        ],
-      ];
-      setMapboxCoordinates(JSON.stringify(defaultCoords));
-      setCoordinateInput(
-        "73.056,33.684;73.057,33.685;73.058,33.684;73.056,33.684"
-      );
-      // Set default coordinates for new notifications
-      //@ts-ignore
-      defaultCoords = [
-        [
-          [73.056, 33.684],
-          [73.057, 33.685],
-          [73.058, 33.684],
-          [73.056, 33.684],
-        ],
-      ];
-      setMapboxCoordinates(JSON.stringify(defaultCoords));
-      setCoordinateInput(
-        "73.056,33.684;73.057,33.685;73.058,33.684;73.056,33.684"
-      );
+      setFormData({
+        title: "",
+        message: "",
+        area: { type: "MultiPolygon", coordinates: [] },
+        roles: [""],
+        startDate: "",
+        endDate: "",
+        SendToAll: false,
+      });
+
+      setMapboxCoordinates("[]");
+      setCoordinateInput("");
     }
   }, [notification]);
 
@@ -158,6 +133,44 @@ export const NotificationForm: React.FC<NotificationFormProps> = ({
       ...prev,
       roles: roleIds,
     }));
+  };
+
+  const handleSendToAllChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const checked = e.target.checked;
+
+    // Update form data
+    setFormData((prev) => {
+      const updatedData = {
+        ...prev,
+        SendToAll: checked,
+      };
+
+      // If SendToAll is checked, remove the area or keep it if there's valid data
+      if (checked) {
+        updatedData.area = undefined; // Don't send area when no valid coordinates exist
+      } else {
+        // If unchecked, restore coordinates if they exist
+        if (notification?.area?.coordinates?.length > 0) {
+          updatedData.area = notification.area; // Restore the original area with valid coordinates
+        } else {
+          updatedData.area = undefined; // Ensure it's removed if no coordinates exist
+        }
+      }
+
+      return updatedData;
+    });
+
+    // If unchecked, restore coordinates if they exist in the notification
+    if (!checked && notification?.area?.coordinates?.length > 0) {
+      const coordString = notification.area.coordinates[0]
+        .map((coord: number[]) => `${coord[0]},${coord[1]}`)
+        .join(";");
+      setCoordinateInput(coordString);
+      setMapboxCoordinates(JSON.stringify(notification.area.coordinates));
+    } else {
+      setCoordinateInput("");
+      setMapboxCoordinates("[]");
+    }
   };
 
   return (
@@ -250,6 +263,19 @@ export const NotificationForm: React.FC<NotificationFormProps> = ({
                   />
                 </div>
               </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Send To World
+                </label>
+                <input
+                  type="checkbox"
+                  checked={formData.SendToAll}
+                  onChange={handleSendToAllChange}
+                  className="h-4 w-4 text-blue-600"
+                />
+              </div>
+
               <RoleSelector
                 selectedRoleIds={formData.roles}
                 onRoleChange={handleRoleChange}
@@ -261,30 +287,19 @@ export const NotificationForm: React.FC<NotificationFormProps> = ({
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   <MapPin className="w-4 h-4 inline mr-1" />
-                  Geographical Area (Draw Polygon)
+                  {formData.SendToAll
+                    ? "Geographical Area (View Globe)"
+                    : "Geographical Area (Draw Polygon)"}
                 </label>
-                <MapboxPolygonDrawer
-                  coordinates={mapboxCoordinates}
-                  setCoordinates={handleMapboxCoordinateChange}
-                />
+                {!formData.SendToAll ? (
+                  <MapboxPolygonDrawer
+                    coordinates={mapboxCoordinates}
+                    setCoordinates={handleMapboxCoordinateChange}
+                  />
+                ) : (
+                  <GlobeView />
+                )}
               </div>
-
-              {/* <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Manual Coordinates (Optional)
-                </label>
-                <textarea
-                  value={coordinateInput}
-                  onChange={(e) => handleCoordinateChange(e.target.value)}
-                  rows={3}
-                  placeholder="73.056,33.684;73.057,33.685;73.058,33.684;73.056,33.684"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
-                />
-                <p className="mt-1 text-xs text-gray-500">
-                  You can also manually enter coordinates as:
-                  lng,lat;lng,lat;lng,lat
-                </p>
-              </div> */}
             </div>
           </div>
 
