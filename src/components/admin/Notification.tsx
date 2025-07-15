@@ -81,11 +81,19 @@ function NotificationMain() {
     if (!confirm("Are you sure you want to delete this notification?")) return;
 
     try {
-      await notificationService.delete(id);
-      setNotifications((prev) =>
-        prev.filter((notification) => notification._id !== id)
-      );
+      const response = await notificationService.delete(id);
+
+      // Check if response status is 204 (No Content) and handle accordingly
+      if (response.status === 204) {
+        setNotifications((prev) =>
+          prev.filter((notification) => notification._id !== id)
+        );
+      } else {
+        setError("Unexpected response when deleting notification.");
+        console.error("Unexpected response:", response);
+      }
     } catch (err) {
+      // This will now only be triggered in case of an actual error (e.g., network error)
       setError("Failed to delete notification");
       console.error("Error deleting notification:", err);
     }
@@ -158,7 +166,7 @@ function NotificationMain() {
 
         {showForm && (
           <NotificationForm
-          //@ts-ignore
+            //@ts-ignore
             notification={editingNotification}
             onSubmit={handleFormSubmit}
             onCancel={handleFormCancel}

@@ -36,6 +36,7 @@ const MapboxPolygonDrawer: React.FC<Props> = ({
         mapboxgl: mapboxgl,
         marker: false,
         placeholder: "Search location...",
+        types: "poi,address",
       });
       //@ts-ignore
       map.current.addControl(geocoder, "top-left");
@@ -56,6 +57,7 @@ const MapboxPolygonDrawer: React.FC<Props> = ({
       mapboxgl: mapboxgl,
       marker: false,
       placeholder: "Search location...",
+      types: "poi,address",
     });
     map.current.addControl(geocoder, "top-left");
 
@@ -303,14 +305,35 @@ const MapboxPolygonDrawer: React.FC<Props> = ({
     if (!map.current || features.length === 0) return;
 
     const current = features[activePolygonIndex];
-    if (!current || !current.geometry.coordinates[0]) return;
+    if (
+      !current ||
+      !current.geometry ||
+      !Array.isArray(current.geometry.coordinates)
+    )
+      return;
 
     const bounds = new mapboxgl.LngLatBounds();
-    current.geometry.coordinates[0].forEach((coord: number[]) => {
-      //@ts-ignore
-      bounds.extend(coord);
-    });
-    map.current.fitBounds(bounds, { padding: 50 });
+
+    try {
+      const polygonCoords = current.geometry.coordinates[0]; // Outer ring
+      if (Array.isArray(polygonCoords)) {
+        polygonCoords.forEach((coord: number[]) => {
+          if (
+            Array.isArray(coord) &&
+            typeof coord[0] === "number" &&
+            typeof coord[1] === "number"
+          ) {
+            bounds.extend([coord[0], coord[1]]);
+          }
+        });
+
+        if (!bounds.isEmpty()) {
+          map.current.fitBounds(bounds, { padding: 50 });
+        }
+      }
+    } catch (err) {
+      console.warn("Invalid coordinates while fitting bounds", err);
+    }
   }, [activePolygonIndex, features]);
 
   return (
