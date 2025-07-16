@@ -18,12 +18,13 @@ export const PermissionManager: React.FC = () => {
   const [formData, setFormData] = useState<PermissionFormData>({
     name: '',
     description: '',
-    resource: '',
-    action: '',
-    isActive: true,
+   
+   
+  
   });
   const [bulkData, setBulkData] = useState<BulkPermissionData[]>([
-    { name: '', description: '', resource: '', action: '' }
+    
+    { name: '', description: '' }
   ]);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerPermission, setDrawerPermission] = useState<Permission | null>(null);
@@ -33,9 +34,9 @@ export const PermissionManager: React.FC = () => {
     setFormData({
       name: '',
       description: '',
-      resource: '',
-      action: '',
-      isActive: true,
+     
+     
+   
     });
     setIsAdding(false);
     setEditingId(null);
@@ -57,18 +58,27 @@ export const PermissionManager: React.FC = () => {
       toast.error("Failed to save permission");
     }
   };
+const handleEdit = (permission: any) => {
+  setFormData({
+    name: permission.name || '',
+    description: permission.label || '', 
+  });
+  setEditingId(permission.id || permission._id || '');
+  setIsAdding(true);
+};
 
-  const handleEdit = (permission: any) => {
-    setFormData({
-      name: permission.name,
-      description: permission.description,
-      resource: permission.resource,
-      action: permission.action,
-      isActive: permission.isActive,
-    });
-    setEditingId(permission.id || permission._id); // Use id or _id
-    setIsAdding(true);
-  };
+
+
+    // setFormData({
+    //   name: permission.name,
+    //   description: permission.description,
+    //   resource: permission.resource,
+    //   action: permission.action,
+    //   isActive: permission.isActive,
+    // });
+  //   setEditingId(permission.id || permission._id); // Use id or _id
+  //   setIsAdding(true);
+  // };
 
   const handleDelete = (id: string) => {
     console.log("Deleting permission with id:", id);
@@ -112,26 +122,56 @@ export const PermissionManager: React.FC = () => {
     );
   };
 
-  const handleBulkCreate = async () => {
-    try {
-      const validPermissions = bulkData.filter(perm => 
-        perm.name.trim() && perm.description.trim() && perm.resource.trim() && perm.action.trim()
-      );
-      if (validPermissions.length === 0) {
-        alert('Please provide at least one valid permission');
-        return;
-      }
+  // const handleBulkCreate = async () => {
+  //   try {
+  //     const validPermissions = bulkData.filter(perm => 
+  //       perm.name.trim() && perm.description.trim() 
+  //     );
+  //     if (validPermissions.length === 0) {
+  //       alert('Please provide at least one valid permission');
+  //       return;
+  //     }
       
-      await createBulkPermissions(validPermissions);
-      setBulkData([{ name: '', description: '', resource: '', action: '' }]);
-      setShowBulkCreate(false);
-    } catch (err) {
-      console.error('Failed to create bulk permissions:', err);
+  //     await createBulkPermissions(validPermissions);
+  //     setBulkData([{ name: '', description: '' }]);
+  //     setShowBulkCreate(false);
+  //   } catch (err) {
+  //     console.error('Failed to create bulk permissions:', err);
+  //   }
+  // };
+
+const handleBulkCreate = async () => {
+  try {
+    const validPermissions = bulkData.filter(perm =>
+      perm.name.trim() && perm.description.trim()
+    );
+
+    if (validPermissions.length === 0) {
+      toast.error('Please provide at least one valid permission');
+      return;
     }
-  };
+
+    // Transform description → label
+    const safePermissions = validPermissions.map(perm => ({
+      name: perm.name.trim(),
+      label: perm.description.trim(), // 🔁 description → label
+    }));
+
+    console.log("Sending to API:", safePermissions);
+
+    await createBulkPermissions(safePermissions);
+    setBulkData([{ name: '', description: '' }]);
+    setShowBulkCreate(false);
+    toast.success("Permissions created successfully");
+  } catch (err) {
+    console.error('Failed to create bulk permissions:', err);
+    toast.error("Bulk permission creation failed");
+  }
+};
+
 
   const addBulkPermission = () => {
-    setBulkData([...bulkData, { name: '', description: '', resource: '', action: '' }]);
+    setBulkData([...bulkData, { name: '', description: '' }]);
   };
 
   const removeBulkPermission = (index: number) => {
@@ -161,8 +201,8 @@ export const PermissionManager: React.FC = () => {
     ? permissions.filter(p => p.resource === filterResource)
     : permissions;
 
-  const resources = [...new Set(permissions.map(p => p.resource))];
-  const actions = [...new Set(permissions.map(p => p.action))];
+  // const resources = [...new Set(permissions.map(p => p.resource))];
+  // const actions = [...new Set(permissions.map(p => p.action))];
 
   return (
     <div className="p-6">
@@ -203,7 +243,7 @@ export const PermissionManager: React.FC = () => {
             <ShieldCheckIcon className="w-8 h-8 text-[#ec2227]" />
           </div>
         </Card>
-        <Card className="p-4">
+        {/* <Card className="p-4">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Resources</p>
@@ -211,31 +251,31 @@ export const PermissionManager: React.FC = () => {
             </div>
             <LayersIcon className="w-8 h-8 text-blue-600" />
           </div>
-        </Card>
-        <Card className="p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Actions</p>
-              <p className="text-2xl font-bold text-gray-900">{actions.length}</p>
-            </div>
-            <LayersIcon className="w-8 h-8 text-green-600" />
-          </div>
-        </Card>
-        <Card className="p-4">
-          <div className="flex items-center justify-between">
-            <div>
+        </Card> */}
+        {/* <Card className="p-4"> */}
+          {/* <div className="flex items-center justify-between"> */}
+            {/* <div> */}
+              {/* <p className="text-sm font-medium text-gray-600">Actions</p> */}
+              {/* <p className="text-2xl font-bold text-gray-900">{actions.length}</p> */}
+            {/* </div> */}
+            {/* <LayersIcon className="w-8 h-8 text-green-600" /> */}
+          {/* </div> */}
+        {/* </Card> */}
+        {/* <Card className="p-4"> */}
+          {/* <div className="flex items-center justify-between"> */}
+            {/* <div>
               <p className="text-sm font-medium text-gray-600">Active</p>
               <p className="text-2xl font-bold text-gray-900">{permissions.filter(p => p.isActive).length}</p>
-            </div>
-            <ShieldCheckIcon className="w-8 h-8 text-purple-600" />
-          </div>
-        </Card>
+            </div> */}
+            {/* <ShieldCheckIcon className="w-8 h-8 text-purple-600" /> */}
+          {/* </div> */}
+        {/* </Card> */}
       </div>
 
       {/* Filter */}
       <Card className="p-4 mb-6">
         <div className="flex gap-4">
-          <select
+          {/* <select
             value={filterResource}
             onChange={(e) => setFilterResource(e.target.value)}
             className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ec2227]"
@@ -244,7 +284,7 @@ export const PermissionManager: React.FC = () => {
             {resources.map(resource => (
               <option key={resource} value={resource}>{resource}</option>
             ))}
-          </select>
+          </select> */}
         </div>
       </Card>
 
@@ -284,20 +324,20 @@ export const PermissionManager: React.FC = () => {
                       onChange={(e) => updateBulkPermission(index, 'description', e.target.value)}
                       className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ec2227]"
                     />
-                    <input
+                    {/* <input
                       type="text"
                       placeholder="Resource"
                       value={permission.resource}
                       onChange={(e) => updateBulkPermission(index, 'resource', e.target.value)}
                       className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ec2227]"
-                    />
-                    <input
+                    /> */}
+                    {/* <input
                       type="text"
                       placeholder="Action"
                       value={permission.action}
                       onChange={(e) => updateBulkPermission(index, 'action', e.target.value)}
                       className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ec2227]"
-                    />
+                    /> */}
                   </div>
                 </div>
               ))}
@@ -354,7 +394,7 @@ export const PermissionManager: React.FC = () => {
                   required
                 />
               </div>
-              <div>
+              {/* <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Resource
                 </label>
@@ -379,21 +419,10 @@ export const PermissionManager: React.FC = () => {
                   placeholder="e.g., create, read, update, delete"
                   required
                 />
-              </div>
+              </div> */}
             </div>
 
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                id="isActive"
-                checked={formData.isActive}
-                onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                className="mr-2"
-              />
-              <label htmlFor="isActive" className="text-sm font-medium text-gray-700">
-                Active
-              </label>
-            </div>
+           
 
             <div className="flex gap-2">
               <Button
@@ -433,7 +462,10 @@ export const PermissionManager: React.FC = () => {
               <ShieldCheckIcon className="w-5 h-5 text-[#ec2227]" />
               <h3 className="font-semibold text-gray-900">{permission.name}</h3>
             </div>
-            <p className="text-sm text-gray-600 mb-2">{permission.description}</p>
+            {/* <p className="text-sm text-gray-600 mb-2">{permission.description}</p> */}
+           <p className="text-sm text-gray-600 mb-2">{permission.label}</p>
+
+
             <div className="flex gap-2">
               {/* Optional tags for resource/action can go here */}
             </div>
@@ -467,12 +499,12 @@ export const PermissionManager: React.FC = () => {
   )}
 </div>
 
-    <PermissionDrawer
+  <PermissionDrawer
   open={drawerOpen}
   onClose={() => setDrawerOpen(false)}
   permission={drawerPermission}
   loading={drawerLoading}
-/>
+   />
 
     </div>
   );

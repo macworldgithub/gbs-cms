@@ -153,15 +153,11 @@ export interface RoleFormData {
 export interface PermissionFormData {
   name: string;
   description: string;
-  resource: string;
-  action: string;
-  isActive: boolean;
 }
 
-export interface BulkRoleData {
+export interface BulkPermissionData {
   name: string;
   description: string;
-  permissionNames: string[];
 }
 
 export interface BulkPermissionData {

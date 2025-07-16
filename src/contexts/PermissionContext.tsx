@@ -48,33 +48,70 @@ export const PermissionProvider: React.FC<PermissionProviderProps> = ({ children
     }
   };
 
-  const updatePermission = async (id: string, permissionData: Partial<PermissionFormData>) => {
-    try {
-      setLoading(true);
-      setError(null);
-      const updatedPermission = await permissionService.updatePermission(id, permissionData);
-      setPermissions(prev => prev.map(permission => permission.id === id ? updatedPermission : permission));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update permission');
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
+  // const updatePermission = async (id: string, permissionData: Partial<PermissionFormData>) => {
+  //   try {
+  //     setLoading(true);
+  //     setError(null);
+  //     const updatedPermission = await permissionService.updatePermission(id, permissionData);
+  //     setPermissions(prev => prev.map(permission => permission.id === id ? updatedPermission : permission));
+  //   } catch (err) {
+  //     setError(err instanceof Error ? err.message : 'Failed to update permission');
+  //     throw err;
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
-  const deletePermission = async (id: string) => {
-    try {
-      setLoading(true);
-      setError(null);
-      await permissionService.deletePermission(id);
-      setPermissions(prev => prev.filter(permission => permission.id !== id));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete permission');
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
+const updatePermission = async (id: string, permissionData: Partial<PermissionFormData>) => {
+  try {
+    setLoading(true);
+    setError(null);
+    const updatedPermission = await permissionService.updatePermission(id, permissionData);
+    setPermissions(prev =>
+      prev.map(permission =>
+        (permission.id || permission._id) === id ? updatedPermission : permission
+      )
+    );
+  } catch (err) {
+    setError(err instanceof Error ? err.message : 'Failed to update permission');
+    throw err;
+  } finally {
+    setLoading(false);
+  }
+};
+
+
+  // const deletePermission = async (id: string) => {
+  //   try {
+  //     setLoading(true);
+  //     setError(null);
+  //     await permissionService.deletePermission(id);
+  //     setPermissions(prev => prev.filter(permission => permission.id !== id));
+  //   } catch (err) {
+  //     setError(err instanceof Error ? err.message : 'Failed to delete permission');
+  //     throw err;
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
+const deletePermission = async (id: string) => {
+  try {
+    setLoading(true);
+    setError(null);
+    await permissionService.deletePermission(id);
+    setPermissions(prev =>
+      prev.filter(permission => (permission.id || permission._id) !== id)
+    );
+  } catch (err) {
+    setError(err instanceof Error ? err.message : 'Failed to delete permission');
+    throw err;
+  } finally {
+    setLoading(false);
+  }
+};
+
+
 
   const createBulkPermissions = async (permissionsData: BulkPermissionData[]) => {
     try {

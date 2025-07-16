@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { Permission, PermissionFormData, BulkPermissionData } from '../types';
 
-const API_BASE_URL = "http://localhost:9000/"; // same as in roleService
+const API_BASE_URL = "http://localhost:9000/"; 
 
 class PermissionService {
   private async request<T>(endpoint: string, options: any = {}): Promise<T> {
@@ -19,20 +19,43 @@ class PermissionService {
   }
 
   // Create a single permission
-  async createPermission(permissionData: PermissionFormData): Promise<Permission> {
-    return this.request<Permission>('permissions', {
-      method: 'POST',
-      data: permissionData,
-    });
-  }
+
+    async createPermission(permissionData:  PermissionFormData): Promise<Permission> {
+      return this.request<Permission>('permissions', {
+        method: 'POST',
+        data: {
+          name: permissionData.name,
+          label: permissionData.description,
+        },
+      });
+    }
+  // async createPermission(permissionData: PermissionFormData): Promise<Permission> {
+  //   return this.request<Permission>('permissions', {
+  //     method: 'POST',
+  //     data: permissionData,
+  //   });
+  // }
 
   // Create multiple permissions at once
-  async createBulkPermissions(permissionsData: BulkPermissionData[]): Promise<Permission[]> {
-    return this.request<Permission[]>('permissions/bulk', {
-      method: 'POST',
-      data: { permissions: permissionsData }, // match roleService structure
-    });
-  }
+  // async createBulkPermissions(permissionsData: BulkPermissionData[]): Promise<Permission[]> {
+  //   return this.request<Permission[]>('permissions/bulk', {
+  //     method: 'POST',
+  //     data: { permissions: permissionsData }, 
+  //   });
+  // }
+
+ async createBulkPermissions(permissionsData: BulkPermissionData[]): Promise<Permission[]> {
+  const transformedPermissions = permissionsData.map((p) => ({
+    name: p.name,
+    label: p.description, 
+  }));
+
+  return this.request<Permission[]>('permissions/bulk', {
+    method: 'POST',
+    data: { permissions: transformedPermissions },
+  });
+}
+
 
   // Get all permissions
   async getAllPermissions(): Promise<Permission[]> {
@@ -50,10 +73,11 @@ class PermissionService {
       method: 'PUT',
       data: {
         name: permissionData.name,
-        description: permissionData.description,
-        resource: permissionData.resource,
-        action: permissionData.action,
-        isActive: permissionData.isActive,
+         label: permissionData.description,
+        // description: permissionData.description,
+        // resource: permissionData.resource,
+        // action: permissionData.action,
+        // isActive: permissionData.isActive,
       },
     });
   }
@@ -66,9 +90,9 @@ class PermissionService {
   }
 
   // Get permissions by resource
-  async getPermissionsByResource(resource: string): Promise<Permission[]> {
-    return this.request<Permission[]>(`permissions?resource=${encodeURIComponent(resource)}`);
-  }
+  // async getPermissionsByResource(resource: string): Promise<Permission[]> {
+  //   return this.request<Permission[]>(`permissions?resource=${encodeURIComponent(resource)}`);
+  // }
 
   // Get permissions by action
   async getPermissionsByAction(action: string): Promise<Permission[]> {
