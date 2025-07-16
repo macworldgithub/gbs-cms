@@ -1,69 +1,78 @@
 import axios from 'axios';
 import { Permission, PermissionFormData, BulkPermissionData } from '../types';
 
-const baseUrl = import.meta.env.VITE_API_URL ?? '';
-
-if (!baseUrl) {
-  throw new Error('Base URL not set. Check your .env.local file.');
-}
+const API_BASE_URL = "http://localhost:9000/"; // same as in roleService
 
 class PermissionService {
-  // GET /permissions - Get all permissions from API
-  async getAllPermissions(): Promise<Permission[]> {
-    const response = await axios.get(`${baseUrl}/permissions`);
-    return response.data as Permission[];
+  private async request<T>(endpoint: string, options: any = {}): Promise<T> {
+    const url = `${API_BASE_URL}${endpoint}`;
+    const config = {
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+      ...options,
+    };
+
+    const response = await axios(url, config);
+    return response.data;
   }
 
-  // GET /permissions/{id} - Get a permission by ID
-  async getPermissionById(id: string): Promise<Permission | null> {
-    const response = await axios.get(`${baseUrl}/permissions/${id}`);
-    return response.data as Permission;
-  }
-
-  // POST /permissions - Create a new permission
+  // Create a single permission
   async createPermission(permissionData: PermissionFormData): Promise<Permission> {
-    const response = await axios.post(`${baseUrl}/permissions`, permissionData);
-    return response.data as Permission;
+    return this.request<Permission>('permissions', {
+      method: 'POST',
+      data: permissionData,
+    });
   }
 
-  // PUT /permissions/{id} - Update a permission
+  // Create multiple permissions at once
+  async createBulkPermissions(permissionsData: BulkPermissionData[]): Promise<Permission[]> {
+    return this.request<Permission[]>('permissions/bulk', {
+      method: 'POST',
+      data: { permissions: permissionsData }, // match roleService structure
+    });
+  }
+
+  // Get all permissions
+  async getAllPermissions(): Promise<Permission[]> {
+    return this.request<Permission[]>('permissions');
+  }
+
+  // Get a permission by ID
+  async getPermissionById(id: string): Promise<Permission> {
+    return this.request<Permission>(`permissions/${id}`);
+  }
+
+  // Update a permission
   async updatePermission(id: string, permissionData: Partial<PermissionFormData>): Promise<Permission> {
-    const response = await axios.put(`${baseUrl}/permissions/${id}`, {
-      name: permissionData.name,
-      description: permissionData.description,
-      resource: permissionData.resource,
-      action: permissionData.action,
-      isActive: permissionData.isActive,
+    return this.request<Permission>(`permissions/${id}`, {
+      method: 'PUT',
+      data: {
+        name: permissionData.name,
+        description: permissionData.description,
+        resource: permissionData.resource,
+        action: permissionData.action,
+        isActive: permissionData.isActive,
+      },
     });
-    return response.data as Permission;
   }
 
-  // DELETE /permissions/{id} - Delete a permission
+  // Delete a permission
   async deletePermission(id: string): Promise<void> {
-    await axios.delete(`${baseUrl}/permissions/${id}`);
-  }
-
-  // POST /permissions/bulk - Create multiple permissions at once
-  async createBulkPermissions(permissionsData: {
-    name: string;
-    label: string;
-  }[]): Promise<Permission[]> {
-    const response = await axios.post(`${baseUrl}/permissions/bulk`, {
-      permissions: permissionsData,
+    return this.request<void>(`permissions/${id}`, {
+      method: 'DELETE',
     });
-    return response.data as Permission[];
   }
 
-  // Helper method to get permissions by resource
+  // Get permissions by resource
   async getPermissionsByResource(resource: string): Promise<Permission[]> {
-    const response = await axios.get(`${baseUrl}/permissions?resource=${encodeURIComponent(resource)}`);
-    return response.data as Permission[];
+    return this.request<Permission[]>(`permissions?resource=${encodeURIComponent(resource)}`);
   }
 
-  // Helper method to get permissions by action
+  // Get permissions by action
   async getPermissionsByAction(action: string): Promise<Permission[]> {
-    const response = await axios.get(`${baseUrl}/permissions?action=${encodeURIComponent(action)}`);
-    return response.data as Permission[];
+    return this.request<Permission[]>(`permissions?action=${encodeURIComponent(action)}`);
   }
 }
 
