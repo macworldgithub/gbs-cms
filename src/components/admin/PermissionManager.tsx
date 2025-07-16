@@ -413,73 +413,67 @@ export const PermissionManager: React.FC = () => {
         </Card>
       )}
 
+     
       {/* Permissions List */}
-      <div className="grid gap-4">
-        {loading ? (
-          <div className="flex items-center justify-center p-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#ec2227]"></div>
+<div className="grid gap-4">
+  {loading ? (
+    <div className="flex items-center justify-center p-8">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#ec2227]"></div>
+    </div>
+  ) : (
+    filteredPermissions.map((permission) => (
+      <Card
+        key={permission.id}
+        className="p-4 cursor-pointer hover:bg-gray-50 transition"
+        onClick={() => handlePermissionClick(permission.id || permission._id)}
+      >
+        <div className="flex items-start justify-between">
+          <div className="flex-1">
+            <div className="flex items-center gap-3 mb-2">
+              <ShieldCheckIcon className="w-5 h-5 text-[#ec2227]" />
+              <h3 className="font-semibold text-gray-900">{permission.name}</h3>
+            </div>
+            <p className="text-sm text-gray-600 mb-2">{permission.description}</p>
+            <div className="flex gap-2">
+              {/* Optional tags for resource/action can go here */}
+            </div>
           </div>
-        ) : (
-          filteredPermissions.map((permission) => (
-            <Card key={permission.id} className="p-4">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <ShieldCheckIcon className="w-5 h-5 text-[#ec2227]" />
-                    <h3 className="font-semibold text-gray-900">{permission.name}</h3>
-                    {/* <span className={`px-2 py-1 text-xs rounded-full ${
-                      permission.isActive 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-red-100 text-red-800'
-                    }`}>
-                      {permission.isActive ? 'Active' : 'Inactive'}
-                    </span> */}
-                  </div>
-                  <p className="text-sm text-gray-600 mb-2">{permission.description}</p>
-                  <div className="flex gap-2">
-                    {/* <span className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded">
-                      Resource: {permission.resource}
-                    </span> */}
-                    {/* <span className="px-2 py-1 text-xs bg-purple-100 text-purple-800 rounded">
-                      Action: {permission.action}
-                    </span> */}
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 ml-4">
-                  <Button
-                    onClick={() => handleEdit(permission)}
-                    variant="outline"
-                    size="sm"
-                  >
-                    <PencilIcon className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    onClick={() => handleDelete(permission.id || permission._id)}
-                    variant="outline"
-                    size="sm"
-                    className="text-red-600 hover:text-red-700"
-                  >
-                    <TrashIcon className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    onClick={() => handlePermissionClick(permission.id || permission._id)}
-                    variant="outline"
-                    size="sm"
-                  >
-                    View
-                  </Button>
-                </div>
-              </div>
-            </Card>
-          ))
-        )}
-      </div>
-      <PermissionDrawer
-        open={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
-        permission={drawerPermission}
-        loading={drawerLoading}
-      />
+          <div className="flex items-center gap-2 ml-4">
+            <Button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleEdit(permission);
+              }}
+              variant="outline"
+              size="sm"
+            >
+              <PencilIcon className="w-4 h-4" />
+            </Button>
+            <Button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDelete(permission.id || permission._id);
+              }}
+              variant="outline"
+              size="sm"
+              className="text-red-600 hover:text-red-700"
+            >
+              <TrashIcon className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
+      </Card>
+    ))
+  )}
+</div>
+
+    <PermissionDrawer
+  open={drawerOpen}
+  onClose={() => setDrawerOpen(false)}
+  permission={drawerPermission}
+  loading={drawerLoading}
+/>
+
     </div>
   );
 };

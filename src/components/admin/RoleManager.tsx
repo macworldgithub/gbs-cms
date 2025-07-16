@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { PlusIcon, PencilIcon, TrashIcon, SaveIcon, XIcon, ShieldIcon, UsersIcon } from 'lucide-react';
+import { PlusIcon, PencilIcon, TrashIcon, SaveIcon, XIcon, ShieldIcon } from 'lucide-react';
 import { useRole } from '../../contexts/RoleContext';
 import { usePermission } from '../../contexts/PermissionContext';
-import { RoleFormData, BulkRoleData, Role, } from '../../types/role';
+import { RoleFormData, BulkRoleData, Role } from '../../types/role';
 import { Button } from '../ui/button';
 import { Card } from '../ui/card';
 import { toast } from "react-toastify";
@@ -10,8 +10,7 @@ import { RoleDrawer } from './RoleDrawer';
 import { roleService } from '../../services/roleService';
 
 export const RoleManager: React.FC = () => {
-  //@ts-ignore
-  const { roles, loading, error, createRole, updateRole, deleteRole, addPermissionToRole, removePermissionFromRole, createBulkRoles, getRoleById } = useRole();
+  const { roles, setRoles, loading, error, createRole, updateRole, deleteRole, addPermissionToRole, removePermissionFromRole, createBulkRoles } = useRole();
   const { permissions } = usePermission();
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -23,49 +22,77 @@ export const RoleManager: React.FC = () => {
     name: '',
     description: '',
     permissionIds: [],
-    isActive: true,
   });
   const [bulkData, setBulkData] = useState<BulkRoleData[]>([
     { name: '', description: '', permissionNames: [] }
   ]);
 
 
-const handleRoleClick = async (roleId: string) => {
-  try {
-    const role = await roleService.getRoleById(roleId); 
-    //@ts-ignore
-    if (!role) return toast.error("Role not found");
-    //@ts-ignore
-    setDrawerRole(role);
-    setDrawerOpen(true);
-  } catch (err) {
-    console.error("Error fetching role:", err);
-    toast.error("Failed to fetch role details");
-  }
-};
-
-
+  const handleRoleClick = async (roleId: string) => {
+    try {
+      const role = await roleService.getRoleById(roleId);
+      if (!role) return toast.error("Role not found");
+      setDrawerRole(role);
+      setDrawerOpen(true);
+    } catch (err) {
+      console.error("Error fetching role:", err);
+      toast.error("Failed to fetch role details");
+    }
+  };
 
   const resetForm = () => {
     setFormData({
       name: '',
       description: '',
       permissionIds: [],
-      isActive: true,
     });
     setIsAdding(false);
     setEditingId(null);
   };
 
+  const handleEdit = (role: Role) => {
+    setFormData({
+      name: role.name,
+      description: role.label,
+      permissionIds: role.permissions.map(p => p.permission?._id?.toString()).filter(Boolean),
+    });
+    setEditingId(role._id);
+    setIsAdding(true);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      if (editingId) {
-        await updateRole(editingId, formData);
-        toast.success("Role updated successfully");
-      } else {
+      if (!editingId) {
         await createRole(formData);
         toast.success("Role added successfully");
+      } else {
+
+        await updateRole(editingId, {
+          name: formData.name,
+          description: formData.description,
+        });
+
+        const existingRole = await roleService.getRoleById(editingId);
+        const existingIds = existingRole.permissions.map(p => p.permission?._id?.toString()).filter(Boolean);
+
+        const toAdd = formData.permissionIds.filter(id => !existingIds.includes(id));
+        const toRemove = existingIds.filter(id => !formData.permissionIds.includes(id));
+
+        // Add new permissions
+        for (const pid of toAdd) {
+          await roleService.updatePermissionOfRole(editingId, pid, true);
+        }
+
+        // Remove permissions
+        for (const pid of toRemove) {
+          await roleService.removePermissionFromRole(editingId, pid);
+        }
+
+        const updatedRoles = await roleService.getAllRoles();
+        setRoles(updatedRoles);
+
+        toast.success("Role updated successfully");
       }
       resetForm();
     } catch (err) {
@@ -73,19 +100,6 @@ const handleRoleClick = async (roleId: string) => {
       toast.error("Failed to save role");
     }
   };
-
-  const handleEdit = (role: any) => {
-    setFormData({
-      name: role.name,
-      description: role.label,
-      permissionIds: role.permissions.map((p: any) => p.permission),
-      isActive: role.isActive,
-    });
-    setEditingId(role._id); // MongoDB ID
-    setIsAdding(true);
-  };
-
-
 
   const handleDelete = (id: string) => {
     toast.info(
@@ -128,24 +142,46 @@ const handleRoleClick = async (roleId: string) => {
     );
   };
 
+ const handleBulkCreate = async () => {
+  console.log("handleBulkCreate called");
+  try {
+    const validRoles = bulkData.filter(role => role.name.trim() && role.description.trim());
 
-
-
-  const handleBulkCreate = async () => {
-    try {
-      const validRoles = bulkData.filter(role => role.name.trim() && role.description.trim());
-      if (validRoles.length === 0) {
-        alert('Please provide at least one valid role');
-        return;
-      }
-
-      await createBulkRoles(validRoles);
-      setBulkData([{ name: '', description: '', permissionNames: [] }]);
-      setShowBulkCreate(false);
-    } catch (err) {
-      console.error('Failed to create bulk roles:', err);
+    if (validRoles.length === 0) {
+      toast.error('Please provide at least one valid role');
+      return;
     }
-  };
+
+    const safeRoles = validRoles.map(role => ({
+      name: role.name.trim(),
+      label: role.description.trim(),
+      permissions: role.permissionNames
+        .map(name => {
+          const matchedPermission = permissions.find(p => p.name === name);
+          if (!matchedPermission) {
+            console.warn(`Permission name "${name}" not found.`);
+            return null;
+          }
+          return {
+            name: matchedPermission._id, // backend expects the permission _id
+            value: true,
+          };
+        })
+        .filter(Boolean), // remove nulls (unmatched names)
+    }));
+
+    console.log("Sending to API:", safeRoles);
+
+    await roleService.createBulkRoles(safeRoles);
+    setBulkData([{ name: '', description: '', permissionNames: [] }]);
+    setShowBulkCreate(false);
+    toast.success("Roles created successfully");
+  } catch (err) {
+    console.error('Failed to create bulk roles:', err);
+    toast.error("Bulk role creation failed");
+  }
+};
+
 
   const addBulkRole = () => {
     setBulkData([...bulkData, { name: '', description: '', permissionNames: [] }]);
@@ -162,10 +198,17 @@ const handleRoleClick = async (roleId: string) => {
   };
 
   const handlePermissionToggle = (roleId: string, permissionId: string, hasPermission: boolean) => {
+    console.log("Toggle Called with:", { roleId, permissionId, hasPermission });
+
+    if (!permissionId) {
+      console.error(" Permission ID is undefined!");
+      return;
+    }
+
     if (hasPermission) {
       removePermissionFromRole(roleId, permissionId);
     } else {
-      addPermissionToRole(roleId, permissionId);
+      addPermissionToRole(roleId, permissionId);  // This is where permissionId is likely undefined
     }
   };
 
@@ -208,7 +251,7 @@ const handleRoleClick = async (roleId: string) => {
             <ShieldIcon className="w-8 h-8 text-[#ec2227]" />
           </div>
         </Card>
-        <Card className="p-4">
+        {/* <Card className="p-4">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Active Roles</p>
@@ -216,7 +259,7 @@ const handleRoleClick = async (roleId: string) => {
             </div>
             <UsersIcon className="w-8 h-8 text-green-600" />
           </div>
-        </Card>
+        </Card> */}
         <Card className="p-4">
           <div className="flex items-center justify-between">
             <div>
@@ -333,42 +376,23 @@ const handleRoleClick = async (roleId: string) => {
               </label>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-40 overflow-y-auto border rounded-md p-3">
                 {permissions.map((permission) => (
-                  <label key={permission.id} className="flex items-center space-x-2">
+                  <label key={permission._id} className="flex items-center space-x-2">
                     <input
                       type="checkbox"
-                      checked={formData.permissionIds.includes(permission.id)}
+                      checked={formData.permissionIds.includes(permission._id)}
                       onChange={(e) => {
-                        if (e.target.checked) {
-                          setFormData({
-                            ...formData,
-                            permissionIds: [...formData.permissionIds, permission.id]
-                          });
-                        } else {
-                          setFormData({
-                            ...formData,
-                            permissionIds: formData.permissionIds.filter(id => id !== permission.id)
-                          });
-                        }
+                        const newPermissionIds = e.target.checked
+                          ? [...formData.permissionIds, permission._id]
+                          : formData.permissionIds.filter(id => id !== permission._id);
+                        setFormData({ ...formData, permissionIds: newPermissionIds });
                       }}
                       className="rounded"
                     />
                     <span className="text-sm">{permission.name}</span>
                   </label>
                 ))}
-              </div>
-            </div>
 
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                id="isActive"
-                checked={formData.isActive}
-                onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                className="mr-2"
-              />
-              <label htmlFor="isActive" className="text-sm font-medium text-gray-700">
-                Active
-              </label>
+              </div>
             </div>
 
             <div className="flex gap-2">
@@ -413,23 +437,19 @@ const handleRoleClick = async (roleId: string) => {
                       {role.name}
                     </button>
 
-                    <span className={`px-2 py-1 text-xs rounded-full ${role.isActive
-                      ? 'bg-green-100 text-green-800'
-                      : 'bg-red-100 text-red-800'
-                      }`}>
-                      {role.isActive ? 'Active' : 'Inactive'}
-                    </span>
+
                   </div>
                   <p className="text-sm text-gray-600 mb-3">{role.description}</p>
                   <div className="flex flex-wrap gap-1">
-                    {role.permissions.map((permission) => (
+                    {role.permissions.map((permissionWrapper) => (
                       <span
-                        key={permission.id}
+                        key={permissionWrapper.permission?._id}
                         className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded"
                       >
-                        {permission.name}
+                        {permissionWrapper.permission?.name}
                       </span>
                     ))}
+
                   </div>
                   <div className="mt-2 text-xs text-gray-500">
                     {role.permissions.length} permission{role.permissions.length !== 1 ? 's' : ''}
@@ -460,29 +480,32 @@ const handleRoleClick = async (roleId: string) => {
                   </Button>
                 </div>
               </div>
-
               {/* Permission Management */}
               {selectedRole === roleId && (
                 <div className="mt-4 pt-4 border-t">
                   <h4 className="font-medium mb-3">Manage Permissions</h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
                     {permissions.map((permission) => {
-                      const hasPermission = role.permissions.some(p => p.id === permission.id);
+                      const hasPermission = role.permissions.some(p => p.permission._id === permission._id);
                       return (
-                        <label key={permission.id} className="flex items-center space-x-2">
+                        <label key={permission._id} className="flex items-center space-x-2">
                           <input
                             type="checkbox"
                             checked={hasPermission}
-                            onChange={() => handlePermissionToggle(roleId, permission.id, hasPermission)}
+                            onChange={() =>
+                              handlePermissionToggle(roleId, permission._id, hasPermission)
+                            }
                             className="rounded"
                           />
                           <span className="text-sm">{permission.name}</span>
                         </label>
                       );
                     })}
+
                   </div>
                 </div>
               )}
+
             </Card>
           );
         }))

@@ -139,6 +139,7 @@ export const RoleProvider: React.FC<RoleProviderProps> = ({ children }) => {
     error,
     createRole,
     updateRole,
+    setRoles,
     deleteRole,
     addPermissionToRole,
     removePermissionFromRole,

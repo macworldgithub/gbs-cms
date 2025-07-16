@@ -44,8 +44,13 @@ class PermissionService {
   }
 
   // POST /permissions/bulk - Create multiple permissions at once
-  async createBulkPermissions(permissionsData: BulkPermissionData[]): Promise<Permission[]> {
-    const response = await axios.post(`${baseUrl}/permissions/bulk`, permissionsData);
+  async createBulkPermissions(permissionsData: {
+    name: string;
+    label: string;
+  }[]): Promise<Permission[]> {
+    const response = await axios.post(`${baseUrl}/permissions/bulk`, {
+      permissions: permissionsData,
+    });
     return response.data as Permission[];
   }
 
