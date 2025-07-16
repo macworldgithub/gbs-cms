@@ -78,6 +78,7 @@ export const EventManager: React.FC = () => {
       };
 
       if (editingId) {
+      
         await updateEvent(editingId, eventData);
       } else {
         await addEvent(eventData);

@@ -5,6 +5,8 @@ import { User } from '../../types';
 import { Button } from '../ui/button';
 import { Card } from '../ui/card';
 import { userService } from '../../services/userService';
+import { Modal } from 'antd';
+
 
 export const UserManager: React.FC = () => {
   const { currentUser } = useApp();
@@ -22,6 +24,20 @@ export const UserManager: React.FC = () => {
     location: '',
     phone: '',
   });
+  const [selectedUser, setSelectedUser] = useState<User | null>(null); // Modal mein dikhane ke liye user
+const [isModalVisible, setIsModalVisible] = useState(false); // Modal ki visibility control
+
+const handleViewUser = async (id: string) => {
+  try {
+    const user = await userService.getUserById(id);
+    if (user) {
+      setSelectedUser(user);
+      setIsModalVisible(true);
+    }
+  } catch (error) {
+    setError(error instanceof Error ? error.message : 'Failed to fetch user details');
+  }
+};
 
   React.useEffect(() => {
     fetchUsers();
@@ -132,13 +148,13 @@ export const UserManager: React.FC = () => {
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-bold text-gray-900">User Management</h2>
-        <Button
+        {/* <Button
           onClick={() => setIsAdding(true)}
           className="bg-[#ec2227] hover:bg-[#d41e23] text-white"
         >
           <PlusIcon className="w-4 h-4 mr-2" />
           Add User
-        </Button>
+        </Button> */}
       </div>
 
       {error && (
@@ -261,6 +277,27 @@ export const UserManager: React.FC = () => {
           </form>
         </Card>
       )}
+      <Modal
+  open={isModalVisible}
+  onCancel={() => setIsModalVisible(false)}
+  footer={null}
+  title="User Details"
+>
+  {selectedUser ? (
+    <div className="space-y-2">
+      <p><strong>Name:</strong> {selectedUser.name}</p>
+      <p><strong>Email:</strong> {selectedUser.email}</p>
+      <p><strong>Phone:</strong> {selectedUser.phone}</p>
+      <p><strong>Location:</strong> {selectedUser.location}</p>
+      <p><strong>Bio:</strong> {selectedUser.bio}</p>
+      <p><strong>Created At:</strong> {new Date(selectedUser.createdAt).toLocaleString()}</p>
+      {/* Aur bhi fields chahiye to yahan add kar sakti hain */}
+    </div>
+  ) : (
+    <p>Loading...</p>
+  )}
+</Modal>
+
 
       {/* Users List */}
       <div className="grid gap-4">
@@ -282,7 +319,8 @@ export const UserManager: React.FC = () => {
                     }}
                   />
                   <div>
-                    <h3 className="font-semibold text-gray-900">{user.name}</h3>
+                    <h3 className="font-semibold text-gray-900"
+                    onClick={() => handleViewUser(user.id)}>{user.name}</h3>
                     <p className="text-sm text-gray-600">{user.email}</p>
                     {user.location && (
                       <p className="text-xs text-gray-500">{user.location}</p>
