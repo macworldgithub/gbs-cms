@@ -43,7 +43,7 @@ class RoleService {
     return this.request<Role[]>('roles');
   }
 
-  // ✅ Alias to avoid "findAll is not a function" error
+ 
   async findAll(): Promise<Role[]> {
     return this.getAllRoles();
   }
