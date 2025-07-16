@@ -19,31 +19,56 @@ class RoleService {
   }
 
   async createRole(roleData: RoleFormData): Promise<Role> {
-    return this.request<Role>('roles', {
+    // Step 1: Create the role
+    const role = await this.request<Role>('roles', {
       method: 'POST',
       data: {
         name: roleData.name,
         label: roleData.description,
       },
     });
+
+    if (roleData.permissionIds?.length > 0) {
+      for (const pid of roleData.permissionIds) {
+        await this.addPermissionToRole(role._id, pid);
+      }
+    }
+
+    const updatedRole = await this.getRoleById(role._id);
+    return updatedRole;
   }
 
+ 
   async createBulkRoles(rolesData: {
     name: string;
     label: string;
     permissions: { name: string; value: boolean }[];
   }[]): Promise<Role[]> {
-    return this.request<Role[]>('roles/bulk', {
+ 
+    const createdRoles = await this.request<Role[]>('roles/bulk', {
       method: 'POST',
       data: { roles: rolesData },
     });
+
+
+    for (const createdRole of createdRoles) {
+      const matchingInput = rolesData.find(r => r.name === createdRole.name);
+
+      if (matchingInput?.permissions?.length) {
+        for (const perm of matchingInput.permissions) {
+          await this.addPermissionToRole(createdRole._id, perm.name);
+        }
+      }
+    }
+    
+    const refreshedRoles = await this.getAllRoles();
+    return refreshedRoles;
   }
 
   async getAllRoles(): Promise<Role[]> {
     return this.request<Role[]>('roles');
   }
 
- 
   async findAll(): Promise<Role[]> {
     return this.getAllRoles();
   }

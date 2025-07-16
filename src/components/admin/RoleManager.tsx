@@ -10,7 +10,7 @@ import { RoleDrawer } from './RoleDrawer';
 import { roleService } from '../../services/roleService';
 
 export const RoleManager: React.FC = () => {
-  const { roles, setRoles, loading, error, createRole, updateRole, deleteRole, addPermissionToRole, removePermissionFromRole, createBulkRoles } = useRole();
+  const { roles, setRoles, loading, error, createRole, updateRole, deleteRole, addPermissionToRole, removePermissionFromRole} = useRole();
   const { permissions } = usePermission();
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
