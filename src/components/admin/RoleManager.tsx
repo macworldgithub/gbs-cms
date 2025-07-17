@@ -141,7 +141,6 @@ export const RoleManager: React.FC = () => {
       }
     );
   };
-
 const handleBulkCreate = async () => {
   try {
     const validRoles = bulkData.filter(role => role.name.trim() && role.description.trim());
@@ -153,25 +152,14 @@ const handleBulkCreate = async () => {
 
     const safeRoles = validRoles.map(role => {
       const permissionObjects = role.permissionNames.map(name => {
-        // Special handling for message:limit permissions
         if (name.startsWith("message:limit")) {
           const [_, val] = name.split("=");
           const value = parseInt(val || "0", 10);
           return { name: "message:limit", value: isNaN(value) ? 10 : value };
         }
 
-        // Find permission by name to get its _id
-        const matched = permissions.find(p => p.name === name);
-        if (!matched) {
-          console.warn(`Permission "${name}" not found`);
-          return null; // skip if not found
-        }
-
-        return {
-          permission: matched._id, // ✅ ObjectId instead of name
-          value: true
-        };
-      }).filter(Boolean); // remove nulls
+        return { name };
+      }).filter(Boolean);
 
       return {
         name: role.name.trim(),
@@ -180,20 +168,26 @@ const handleBulkCreate = async () => {
       };
     });
 
-    const updatedRoles = await roleService.createBulkRoles(safeRoles);
+    let updatedRoles;
+    try {
+      updatedRoles = await roleService.createBulkRoles(safeRoles);
+    } catch (apiError) {
+      console.error("API Error during bulk role creation:", apiError);
+      toast.error("Bulk role creation failed at API level");
+      return;
+    }
 
+    // 🎯 Likely one of these lines is throwing an error:
     setRoles(updatedRoles);
     setBulkData([{ name: '', description: '', permissionNames: [] }]);
     setShowBulkCreate(false);
     toast.success("Roles created successfully");
+
   } catch (err) {
-    console.error('Failed to create bulk roles:', err);
-    toast.error("Bulk role creation failed");
+    console.error("Error in post-API logic:", err);
+    toast.error("Bulk role creation failed after saving");
   }
 };
-
-
-
 
 
   const addBulkRole = () => {
