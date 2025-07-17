@@ -239,10 +239,10 @@ class UserService {
       name: updatedUser.name,
       email: updatedUser.email,
       phone: updatedUser.phone || '',
-      avatar: '', // You can update this if your API returns avatar
+      avatar: '', 
       bio: '',
       location: '',
-      dateOfBirth: new Date(), // If API provides dateOfBirth, use that
+      dateOfBirth: new Date(), 
       isActive: true,
       createdAt: new Date(updatedUser.createdAt),
       updatedAt: new Date(updatedUser.updatedAt),

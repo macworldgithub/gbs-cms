@@ -24,8 +24,8 @@ export const UserManager: React.FC = () => {
     location: '',
     phone: '',
   });
-  const [selectedUser, setSelectedUser] = useState<User | null>(null); // Modal mein dikhane ke liye user
-const [isModalVisible, setIsModalVisible] = useState(false); // Modal ki visibility control
+  const [selectedUser, setSelectedUser] = useState<User | null>(null); 
+const [isModalVisible, setIsModalVisible] = useState(false); 
 
 const handleViewUser = async (id: string) => {
   try {
@@ -237,7 +237,7 @@ const handleViewUser = async (id: string) => {
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ec2227]"
                 />
               </div>
-              <div className="md:col-span-2">
+              {/* <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Location
                 </label>
@@ -247,8 +247,8 @@ const handleViewUser = async (id: string) => {
                   onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ec2227]"
                 />
-              </div>
-              <div className="md:col-span-2">
+              </div> */}
+              {/* <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Bio
                 </label>
@@ -258,7 +258,7 @@ const handleViewUser = async (id: string) => {
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ec2227]"
                   rows={3}
                 />
-              </div>
+              </div> */}
             </div>
             <div className="flex gap-2">
               <Button
@@ -288,8 +288,8 @@ const handleViewUser = async (id: string) => {
       <p><strong>Name:</strong> {selectedUser.name}</p>
       <p><strong>Email:</strong> {selectedUser.email}</p>
       <p><strong>Phone:</strong> {selectedUser.phone}</p>
-      <p><strong>Location:</strong> {selectedUser.location}</p>
-      <p><strong>Bio:</strong> {selectedUser.bio}</p>
+      {/* <p><strong>Location:</strong> {selectedUser.location}</p>
+      <p><strong>Bio:</strong> {selectedUser.bio}</p> */}
       <p><strong>Created At:</strong> {new Date(selectedUser.createdAt).toLocaleString()}</p>
       {/* Aur bhi fields chahiye to yahan add kar sakti hain */}
     </div>
