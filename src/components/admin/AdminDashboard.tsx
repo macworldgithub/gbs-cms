@@ -19,6 +19,7 @@ import { RoleManager } from "./RoleManager";
 import { PermissionManager } from "./PermissionManager";
 import { LanguageManager } from "../LanguageManager";
 import NotificationMain from "./Notification";
+import BusinessManager from "./BusinessManager";
 
 type AdminSection =
   | "overview"
@@ -29,7 +30,8 @@ type AdminSection =
   | "permissions"
   | "languages"
   | "notification"
-  | "settings";
+  | "settings"
+  | "business";
 
 export const AdminDashboard: React.FC = () => {
   const [activeSection, setActiveSection] = useState<AdminSection>("overview");
@@ -42,6 +44,7 @@ export const AdminDashboard: React.FC = () => {
     { id: "roles", label: "Roles", icon: ShieldIcon },
     { id: "permissions", label: "Permissions", icon: ShieldCheckIcon },
     { id: "languages", label: "Languages", icon: LanguagesIcon },
+    { id: "business", label: "Business", icon: BarChart3Icon },
     { id: "settings", label: "Settings", icon: SettingsIcon },
     { id: "notification", label: "Notification", icon: Bell },
   ];
@@ -66,6 +69,8 @@ export const AdminDashboard: React.FC = () => {
         return <AdminSettings />;
       case "notification":
         return <NotificationMain />;
+      case "business":
+        return <BusinessManager />;
       default:
         return <AdminOverview />;
     }

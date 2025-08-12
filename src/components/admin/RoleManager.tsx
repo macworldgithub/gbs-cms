@@ -10,7 +10,7 @@ import { RoleDrawer } from './RoleDrawer';
 import { roleService } from '../../services/roleService';
 
 export const RoleManager: React.FC = () => {
-  const { roles, setRoles, loading, error, createRole, updateRole, deleteRole, addPermissionToRole, removePermissionFromRole} = useRole();
+  const { roles, setRoles, loading, error, createRole, updateRole, deleteRole, addPermissionToRole, removePermissionFromRole } = useRole();
   const { permissions } = usePermission();
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -96,7 +96,7 @@ export const RoleManager: React.FC = () => {
       }
       resetForm();
     } catch (err) {
-      console.error("Failed to save role:", err); 
+      console.error("Failed to save role:", err);
       toast.error("Failed to save role");
     }
   };
@@ -141,9 +141,7 @@ export const RoleManager: React.FC = () => {
       }
     );
   };
-
- const handleBulkCreate = async () => {
-  console.log("handleBulkCreate called");
+const handleBulkCreate = async () => {
   try {
     const validRoles = bulkData.filter(role => role.name.trim() && role.description.trim());
 
@@ -152,33 +150,42 @@ export const RoleManager: React.FC = () => {
       return;
     }
 
-    const safeRoles = validRoles.map(role => ({
-      name: role.name.trim(),
-      label: role.description.trim(),
-      permissions: role.permissionNames
-        .map(name => {
-          const matchedPermission = permissions.find(p => p.name === name);
-          if (!matchedPermission) {
-            console.warn(`Permission name "${name}" not found.`);
-            return null;
-          }
-          return {
-            name: matchedPermission._id, // backend expects the permission _id
-            value: true,
-          };
-        })
-        .filter(Boolean), // remove nulls (unmatched names)
-    }));
+    const safeRoles = validRoles.map(role => {
+      const permissionObjects = role.permissionNames.map(name => {
+        if (name.startsWith("message:limit")) {
+          const [_, val] = name.split("=");
+          const value = parseInt(val || "0", 10);
+          return { name: "message:limit", value: isNaN(value) ? 10 : value };
+        }
 
-    console.log("Sending to API:", safeRoles);
+        return { name };
+      }).filter(Boolean);
 
-    await roleService.createBulkRoles(safeRoles);
+      return {
+        name: role.name.trim(),
+        label: role.description.trim(),
+        permissions: permissionObjects
+      };
+    });
+
+    let updatedRoles;
+    try {
+      updatedRoles = await roleService.createBulkRoles(safeRoles);
+    } catch (apiError) {
+      console.error("API Error during bulk role creation:", apiError);
+      toast.error("Bulk role creation failed at API level");
+      return;
+    }
+
+    // 🎯 Likely one of these lines is throwing an error:
+    setRoles(updatedRoles);
     setBulkData([{ name: '', description: '', permissionNames: [] }]);
     setShowBulkCreate(false);
     toast.success("Roles created successfully");
+
   } catch (err) {
-    console.error('Failed to create bulk roles:', err);
-    toast.error("Bulk role creation failed");
+    console.error("Error in post-API logic:", err);
+    toast.error("Bulk role creation failed after saving");
   }
 };
 
@@ -308,13 +315,27 @@ export const RoleManager: React.FC = () => {
                       className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ec2227]"
                     />
                   </div>
-                  <input
-                    type="text"
-                    placeholder="Permission names (comma separated)"
-                    value={role.permissionNames.join(', ')}
-                    onChange={(e) => updateBulkRole(index, 'permissionNames', e.target.value.split(',').map(s => s.trim()))}
-                    className="w-full mt-3 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ec2227]"
-                  />
+                  <div className="mt-3">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Select Permissions</label>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2 border rounded-md p-3 max-h-40 overflow-y-auto">
+                      {permissions.map(permission => (
+                        <label key={permission._id} className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            checked={role.permissionNames.includes(permission.name)}
+                            onChange={(e) => {
+                              const updatedNames = e.target.checked
+                                ? [...role.permissionNames, permission.name]
+                                : role.permissionNames.filter(name => name !== permission.name);
+                              updateBulkRole(index, 'permissionNames', updatedNames);
+                            }}
+                          />
+                          <span className="text-sm">{permission.name}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
                 </div>
               ))}
             </div>
