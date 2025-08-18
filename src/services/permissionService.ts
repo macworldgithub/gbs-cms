@@ -1,7 +1,8 @@
 import axios from 'axios';
 import { Permission, PermissionFormData, BulkPermissionData } from '../types';
+import { VITE_API_BASE_URL as API_BASE_URL } from '../utils/config/server';
 
-const API_BASE_URL = "http://localhost:9000/"; // same as in roleService
+// const API_BASE_URL = "http://localhost:9000/";
 
 class PermissionService {
   private async request<T>(endpoint: string, options: any = {}): Promise<T> {
