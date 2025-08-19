@@ -6,7 +6,7 @@ import { VITE_API_BASE_URL as API_BASE_URL } from '../utils/config/server';
 
 class PermissionService {
   private async request<T>(endpoint: string, options: any = {}): Promise<T> {
-    const url = `${API_BASE_URL}${endpoint}`;
+    const url = `${API_BASE_URL}/${endpoint}`;
     const config = {
       headers: {
         'Content-Type': 'application/json',
