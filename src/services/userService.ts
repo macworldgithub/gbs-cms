@@ -79,7 +79,7 @@ class UserService {
   // ✅ API INTEGRATED METHOD
   async getAllUsers(): Promise<User[]> {
     try {
-      const response = await fetch('http://localhost:9000/user');
+      const response = await fetch('https://gbs.westsidecarcare.com.au/user');
       const data = await response.json();
 
       // Transform the backend data to match your `User` type
@@ -140,7 +140,7 @@ class UserService {
 
   async getUserById(id: string): Promise<User | null> {
   try {
-    const response = await fetch(`http://localhost:9000/user/${id}`);
+    const response = await fetch(`https://gbs.westsidecarcare.com.au/${id}`);
 
     if (!response.ok) {
       throw new Error(`User with ID ${id} not found`);
@@ -219,7 +219,7 @@ class UserService {
 
  async updateUser(id: string, userData: Partial<User>): Promise<User> {
   try {
-    const response = await fetch(`http://localhost:9000/user/${id}`, {
+    const response = await fetch(`https://gbs.westsidecarcare.com.au/user/${id}`, {
       method: 'PATCH', // Use 'PATCH' if your API requires
       headers: {
         'Content-Type': 'application/json',
@@ -289,7 +289,7 @@ class UserService {
 
  async deleteUser(id: string): Promise<void> {
   try {
-    const response = await fetch(`http://localhost:9000/user/${id}`, {
+    const response = await fetch(`https://gbs.westsidecarcare.com.au/user/${id}`, {
       method: 'DELETE',
     });
 

@@ -1,14 +1,14 @@
 // src/components/AddBusinessModal.tsx
 import React from "react";
-import { Tag } from "antd";
 
 interface AddBusinessModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (business: any) => void;
+  onSubmit: (e: React.FormEvent) => void;
   business: any;
   setBusiness: React.Dispatch<React.SetStateAction<any>>;
   states: string[];
+  industry: string[];
   tagOptions: string[];
   handleChange: (e: React.ChangeEvent<any>) => void;
   handleTagToggle: (tag: string) => void;
@@ -21,6 +21,7 @@ export default function AddBusinessModal({
   business,
   setBusiness,
   states,
+  industry,
   tagOptions,
   handleChange,
   handleTagToggle,
@@ -36,7 +37,8 @@ export default function AddBusinessModal({
 
       <div className="relative bg-white rounded shadow-lg p-6 w-full max-w-lg z-10">
         <h2 className="text-2xl font-bold mb-4">Add Business Listing</h2>
-        <form onSubmit={(e) => onSubmit(e)} className="space-y-4">
+        <form onSubmit={onSubmit} className="space-y-4">
+          {/* Business Name */}
           <input
             name="name"
             value={business.name}
@@ -44,24 +46,40 @@ export default function AddBusinessModal({
             placeholder="Business Name"
             className="w-full border p-2 rounded"
           />
+
+          {/* Owner / Title */}
           <input
             name="owner"
             value={business.owner}
             onChange={handleChange}
-            placeholder="Owner Name"
+            placeholder="Owner / Title"
             className="w-full border p-2 rounded"
           />
-          <input
-            name="rating"
-            value={business.rating}
+
+          {/* Industry */}
+          {/* <input
+            name="industry"
+            value={business.industry || ""}
             onChange={handleChange}
-            placeholder="Rating (e.g. 4.8)"
+            placeholder="Industry (e.g. Technology & IT)"
             className="w-full border p-2 rounded"
-            type="number"
-            min="0"
-            max="5"
-            step="0.1"
-          />
+          /> */}
+
+           <select
+            name="industry"
+            value={business.industry || ""}
+            onChange={handleChange}
+            className="w-full border p-2 rounded"
+          >
+            <option value="">Select Industry</option>
+            {industry.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </select>
+
+          {/* State */}
           <select
             name="location"
             value={business.location}
@@ -75,32 +93,66 @@ export default function AddBusinessModal({
               </option>
             ))}
           </select>
-          <textarea
-            name="description"
-            value={business.description}
+
+          {/* City */}
+          <input
+            name="city"
+            value={business.city || ""}
             onChange={handleChange}
-            placeholder="Description"
+            placeholder="City"
             className="w-full border p-2 rounded"
           />
-          <div>
-            <span className="font-semibold">Tags:</span>
-            <div className="flex flex-wrap gap-2 mt-2">
-              {tagOptions.map((tag) => (
-                <button
-                  type="button"
-                  key={tag}
-                  className={`px-3 py-1 rounded ${
-                    business.tags.includes(tag)
-                      ? "bg-blue-500 text-white"
-                      : "bg-gray-200"
-                  }`}
-                  onClick={() => handleTagToggle(tag)}
-                >
-                  {tag}
-                </button>
-              ))}
-            </div>
-          </div>
+
+          {/* About */}
+          <textarea
+            name="about"
+            value={business.about || ""}
+            onChange={handleChange}
+            placeholder="About Business"
+            className="w-full border p-2 rounded"
+          />
+
+          {/* Services */}
+          <input
+            name="services"
+            value={business.services || ""}
+            onChange={handleChange}
+            placeholder="Services (comma separated)"
+            className="w-full border p-2 rounded"
+          />
+
+          {/* Industries Served */}
+          <input
+            name="industriesServed"
+            value={business.industriesServed || ""}
+            onChange={handleChange}
+            placeholder="Industries Served (comma separated)"
+            className="w-full border p-2 rounded"
+          />
+
+          {/* Looking For */}
+          <input
+            name="lookingFor"
+            value={business.lookingFor || ""}
+            onChange={handleChange}
+            placeholder="Looking For (e.g. Partnerships, Investors)"
+            className="w-full border p-2 rounded"
+          />
+
+          {/* Rating */}
+          <input
+            name="rating"
+            value={business.rating}
+            onChange={handleChange}
+            placeholder="Rating (0 - 5)"
+            className="w-full border p-2 rounded"
+            type="number"
+            min="0"
+            max="5"
+            step="0.1"
+          />
+
+          {/* Contact Info */}
           <input
             name="phone"
             value={business.phone}
@@ -116,12 +168,22 @@ export default function AddBusinessModal({
             className="w-full border p-2 rounded"
           />
           <input
-            name="profile"
-            value={business.profile}
+            name="website"
+            value={business.website || ""}
             onChange={handleChange}
-            placeholder="Profile Link"
+            placeholder="Website"
             className="w-full border p-2 rounded"
           />
+
+          {/* Social Links */}
+          <input
+            name="socialLinks"
+            value={business.socialLinks || ""}
+            onChange={handleChange}
+            placeholder="Social Links (comma separated URLs)"
+            className="w-full border p-2 rounded"
+          />
+
           <div className="flex justify-end gap-2 mt-4">
             <button
               type="button"
