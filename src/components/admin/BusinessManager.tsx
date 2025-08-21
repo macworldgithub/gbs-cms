@@ -481,6 +481,7 @@ export default function BusinessManager() {
                       )}
                     </div>
 
+
                     <div className="flex flex-wrap gap-2 mt-2">
                       <p className="text-sm font-bold">Industries Served</p>
                       {b.industriesServed?.length > 0 ? (
