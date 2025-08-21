@@ -1,15 +1,13 @@
-import React, { useState, useEffect } from "react";
-import axios from "axios";
-import { Button } from "../ui/button";
-import EditBusinessModal from "./EditBusinessModal";
-import { PlusIcon, PencilIcon, TrashIcon } from 'lucide-react';
-import { Tag } from "antd";
-import { Input, Select } from "antd";
-import AddBusinessModal from "./AddBusinessModal";
-import { VITE_API_BASE_URL as API_BASE_URL, AUTH_TOKEN } from "../../utils/config/server";
-import { toast } from "react-toastify";
-import { Upload } from "antd";
 import { UploadOutlined } from "@ant-design/icons";
+import { Input, Select, Tag, Upload } from "antd";
+import axios from "axios";
+import { PencilIcon, PlusIcon, TrashIcon } from 'lucide-react';
+import React, { useEffect, useState } from "react";
+import { toast } from "react-toastify";
+import { VITE_API_BASE_URL as API_BASE_URL, AUTH_TOKEN } from "../../utils/config/server";
+import { Button } from "../ui/button";
+import AddBusinessModal from "./AddBusinessModal";
+import EditBusinessModal from "./EditBusinessModal";
 
 
 const states = ['VIC', 'NSW', 'QLD', 'SA', 'WA'];
@@ -31,6 +29,27 @@ const tagOptions = ["Corporate Law", "Contract Review", "Business Formation"];
 const userId = "689628a1c17000852c2fb4d6";
 
 export default function BusinessManager() {
+  const getEmptyBusiness = () => ({
+    name: "",
+    owner: "",
+    rating: "",
+    about: "",
+    website: "",
+    state: "",
+    address: "",
+    location: "",
+    description: "",
+    tags: [] as string[],
+    phone: "",
+    email: "",
+    profile: "",
+    industry: "",
+    city: "",
+    services: [] as string[],          // ✅ always array
+    industriesServed: [] as string[],  // ✅ always array
+    lookingFor: "",
+    socialLinks: [] as { platform: string; url: string }[], // ✅ always array of objects
+  });
   const [showingFeatured, setShowingFeatured] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -41,49 +60,7 @@ export default function BusinessManager() {
   const [industryFilter, setIndustryFilter] = useState("");
   const [page, setPage] = useState(1);
   const [limit] = useState(10); // fixed per page
-  const [business, setBusiness] = useState<{
-    id?: string;
-    name: string;
-    owner: string;
-    rating: string;
-    about: string;
-    website: string;
-    state: string;
-    address: string;
-    location: string;
-    description: string;
-    tags: string[];
-    phone: string;
-    email: string;
-    profile: string;
-    industry?: string;
-    city?: string;
-    lookingFor?: string;
-    services?: string[];
-    industriesServed?: string[];
-    socialLinks: { type: string; url: string }[];
-  }>({
-    id: "", // default
-    name: "",
-    owner: "",
-    rating: "",
-    about: "",
-    website: "",
-    state: "",
-    address: "",
-    location: "",
-    description: "",
-    tags: [],
-    phone: "",
-    email: "",
-    profile: "",
-    industry: "",
-    city: "",
-    lookingFor: "",
-    services: [],
-    industriesServed: [],
-    socialLinks: [],
-  });
+  const [business, setBusiness] = useState(getEmptyBusiness());
 
   const fetchBusinesses = async () => {
     try {
@@ -123,55 +100,111 @@ export default function BusinessManager() {
         : [...prev.tags, tag],
     }));
   };
+  // const handleSubmit = async (e: React.FormEvent) => {
+  //   e.preventDefault();
+
+  //   const ratingValue = business.rating ? parseFloat(business.rating) : 0;
+
+
+  //   const payload = {
+  //     companyName: business.name,
+  //     title: business.owner,
+  //     industry: business.industry,
+  //     state: business.location,
+  //     city: business.city,
+  //     about: business.about,
+  //     services: business.services || [],
+  //     industriesServed: business.industriesServed || [],
+  //     lookingFor: business.lookingFor,
+
+  //     phone: business.phone,
+  //     email: business.email,
+  //     website: business.website,
+  //     rating: ratingValue,
+  //     socialLinks: business.socialLinks
+  //       ? business.socialLinks.split(",").map((url: string) => ({
+  //         platform: "Link",
+  //         url: url.trim(),
+  //       }))
+  //       : [],
+  //     gallery: [],
+  //     testimonials: [],
+  //     memberSince: new Date().toISOString(),
+  //     specialOffers: [],
+  //     isFeatured: false,
+  //   };
+
+  //   try {
+  //     const response = await axios.post(`${API_BASE_URL}/business`, payload, {
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //         Authorization: `Bearer ${AUTH_TOKEN}`,
+  //       },
+  //     });
+  //     console.log("Response:", response.data);
+  //     await fetchBusinesses();
+  //     toast.success("Business created successfully");
+  //     setIsModalOpen(false);
+  //     setBusiness(getEmptyBusiness());
+
+
+
+
+  //   } catch (error: any) {
+  //     console.error("Error adding business:", error.response?.data || error.message);
+  //   }
+  // };
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const ratingValue = business.rating ? parseFloat(business.rating) : 0;
-
-
-    const payload = {
-      companyName: business.name,
-      title: business.owner,
-      industry: business.industry,
-      state: business.location,
-      city: business.city,
-      about: business.about,
-      services: business.services || [], // Use array directly
-      industriesServed: business.industriesServed || [], // Use array directly
-      lookingFor: business.lookingFor,
-
-      phone: business.phone,
-      email: business.email,
-      website: business.website,
-      rating: ratingValue,
-      socialLinks: business.socialLinks
-        //@ts-ignore
-        ? business.socialLinks.split(",").map((url: string) => ({
-          platform: "Link",
-          url: url.trim(),
-        }))
-        : [],
-      gallery: [],
-      testimonials: [],
-      memberSince: new Date().toISOString(),
-      specialOffers: [],
-      isFeatured: false,
-    };
-
     try {
+      const ratingValue = business.rating ? parseFloat(business.rating) : 0;
+
+      const payload = {
+        companyName: business.name,
+        title: business.owner,
+        industry: business.industry,
+        state: business.location,
+        city: business.city,
+        about: business.about,
+        services: Array.isArray(business.services) ? business.services : [], // Ensure array
+        industriesServed: Array.isArray(business.industriesServed)
+          ? business.industriesServed
+          : [], // Ensure array
+        lookingFor: business.lookingFor,
+        phone: business.phone,
+        email: business.email,
+        website: business.website,
+        rating: ratingValue,
+        socialLinks: Array.isArray(business.socialLinks)
+          ? business.socialLinks
+          : [], // Ensure array of objects
+        gallery: [],
+        testimonials: [],
+        memberSince: new Date().toISOString(),
+        specialOffers: [],
+        isFeatured: false,
+      };
+
+      console.log("Submitting payload:", payload); // Debug payload
+
       const response = await axios.post(`${API_BASE_URL}/business`, payload, {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${AUTH_TOKEN}`,
         },
       });
+
       console.log("Response:", response.data);
       await fetchBusinesses();
-      toast.success("Business created successfully"); // Show toast on success
+      toast.success("Business created successfully");
       setIsModalOpen(false);
+      setBusiness(getEmptyBusiness());
     } catch (error: any) {
       console.error("Error adding business:", error.response?.data || error.message);
+      toast.error("Failed to add business");
     }
   };
 
@@ -187,7 +220,6 @@ export default function BusinessManager() {
       });
 
       toast.success("Business deleted successfully");
-      // UI update ke liye fresh list fetch karo
       await fetchBusinesses();
     } catch (error: any) {
       console.error("Error deleting business:", error.response?.data || error.message);
@@ -195,19 +227,13 @@ export default function BusinessManager() {
     }
   };
 
+
+  // inside BusinessManager component
+
+  // 👉 Update function
   const handleUpdate = async (id: string) => {
-    console.log("Updating business with ID:", id);
-    console.log("AUTH_TOKEN:", AUTH_TOKEN);
-    if (!id) {
-      toast.error("Business ID is missing");
-      return;
-    }
-
     try {
-      const ratingValue = business.rating ? parseFloat(business.rating) : 0;
-
       const payload = {
-        user: { _id: userId }, // Include user ID
         companyName: business.name,
         title: business.owner,
         industry: business.industry,
@@ -220,23 +246,11 @@ export default function BusinessManager() {
         phone: business.phone,
         email: business.email,
         website: business.website,
-        rating: ratingValue,
-        socialLinks: business.socialLinks.map((link: any) => ({
-          platform: link.platform || "Link",
-          url: link.url,
-          _id: link._id, // Preserve _id if present
-        })),
-        recommendations: selectedBusiness?.recommendations || 0,
-        gallery: selectedBusiness?.gallery || [],
-        testimonials: selectedBusiness?.testimonials || [],
-        memberSince: selectedBusiness?.memberSince || new Date().toISOString(),
-        specialOffers: selectedBusiness?.specialOffers || [],
-        isFeatured: selectedBusiness?.isFeatured || false,
+        rating: business.rating ? parseFloat(business.rating) : 0,
+        socialLinks: business.socialLinks || [],
       };
 
-      console.log("PUT payload:", payload);
-
-      const response = await axios.put(
+      const response = await axios.patch(
         `${API_BASE_URL}/business/${id}`,
         payload,
         {
@@ -247,15 +261,16 @@ export default function BusinessManager() {
         }
       );
 
-      console.log("Response:", response.data);
-      toast.success("Business updated successfully");
-      await fetchBusinesses();
+      toast.success("Business updated successfully!");
       setIsEditModalOpen(false);
+      await fetchBusinesses();
     } catch (error: any) {
       console.error("Error updating business:", error.response?.data || error.message);
-      toast.error("Failed to update business: " + (error.response?.data?.message || error.message));
+      toast.error("Failed to update business");
     }
   };
+
+
 
 
   const searchBusinesses = async () => {
@@ -376,12 +391,15 @@ export default function BusinessManager() {
 
         <div className="flex gap-2 justify-end">
           <Button
-            onClick={() => setIsModalOpen(true)}
-            className="bg-[#ec2227] hover:bg-[#d41e23] text-white"
+          className="bg-[#ec2227] hover:bg-[#d41e23] text-white"
+            onClick={() => {
+              setBusiness(getEmptyBusiness()); // ✅ safe reset
+              setIsModalOpen(true);
+            }}
           >
-            <PlusIcon className="w-4 h-4 mr-2" />
             Add Business
           </Button>
+
 
           <Button
             onClick={() => {
@@ -470,7 +488,7 @@ export default function BusinessManager() {
 
                     <div className="flex flex-wrap gap-2 mt-2">
                       <p className="text-sm font-bold">Services</p>
-                      {b.services?.length > 0 ? (
+                      {Array.isArray(b.services) && b.services.length > 0 ? (
                         b.services.map((service: string) => (
                           <Tag color="blue" key={service}>
                             {service}
@@ -524,33 +542,31 @@ export default function BusinessManager() {
                 </Button>
                 <Button
                   onClick={() => {
-                    setSelectedBusiness(b);
-                    // setBusiness({
-                    //   id: b._id,
-                    //   name: b.companyName || "",
-                    //   owner: b.title || "",
-                    //   industry: b.industry || "",
-                    //   city: b.city || "",
-                    //   state: b.state || "",
-                    //   about: b.about || "",
-                    //   phone: b.phone || "",
-                    //   email: b.email || "",
-                    //   website: b.website || "",
-                    //   rating: b.rating?.toString() || "",
-                    //   lookingFor: b.lookingFor || "",
-                    //   services: b.services || [],
-                    //   industriesServed: b.industriesServed || [],
-                    //   socialLinks: b.socialLinks || [],
-                    // });
+                    setSelectedBusiness(b);   // store selected business
+                    setBusiness({
+                      ...b,
+                      name: b.companyName || "",
+                      owner: b.title || "",
+                      rating: b.rating?.toString() || "",
+                      about: b.about || "",
+                      website: b.website || "",
+                      state: b.state || "",
+                      city: b.city || "",
+                      services: b.services || [],
+                      industriesServed: b.industriesServed || [],
+                      lookingFor: b.lookingFor || "",
+                      phone: b.phone || "",
+                      email: b.email || "",
+                      socialLinks: b.socialLinks || [],
+                    });
                     setIsEditModalOpen(true);
                   }}
-
-
                   variant="outline"
                   size="sm"
                 >
                   <PencilIcon className="w-4 h-4" />
                 </Button>
+
                 <Button
                   onClick={() => handleDelete(b._id || b.id)} // backend id field ka naam confirm karein
                   variant="outline"
@@ -586,9 +602,13 @@ export default function BusinessManager() {
         onClose={() => setIsEditModalOpen(false)}
         business={business}
         setBusiness={setBusiness}
-        onUpdate={() => handleUpdate(business.id!)} // ✅ use the correct id
+        onUpdate={handleUpdate}
       />
+
 
     </div>
   );
 }
+
+
+
