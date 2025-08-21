@@ -1,99 +1,118 @@
-import React, { useState } from "react";
+// import React, { useState } from "react";
+// import axios from "axios";
+// import { useAuth } from "../../contexts/AuthContext";
+// import { FaEnvelope, FaLock } from "react-icons/fa";
+// import { FaEye, FaEyeSlash } from "react-icons/fa";
 
-type LoginForm = {
-  email: string;
-  password: string;
-};
+// const Login: React.FC = () => {
+//   const [form, setForm] = useState({ email: "", password: "" });
+//   const [loading, setLoading] = useState(false);
+//   const [error, setError] = useState<string | null>(null);
+//   const [showPassword, setShowPassword] = useState(false);
 
-const Login: React.FC = () => {
-  const [form, setForm] = useState<LoginForm>({ email: "", password: "" });
-  const [loading, setLoading] = useState(false);
+//   const { login } = useAuth();
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
+//   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+//     setForm({ ...form, [e.target.name]: e.target.value });
+//   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
+//   const handleSubmit = async (e: React.FormEvent) => {
+//     e.preventDefault();
+//     setLoading(true);
+//     setError(null);
 
-    // Dummy API simulation
-    setTimeout(() => {
-      alert(`Logged in with\nEmail: ${form.email}\nPassword: ${form.password}`);
-      setLoading(false);
-    }, 1500);
-  };
+//     try {
+//       const response = await axios.post(
+//         "https://gbs.westsidecarcare.com.au/user/auth/signin",
+//         {
+//           email: form.email,
+//           password: form.password,
+//         },
+//         {
+//           headers: { "Content-Type": "application/json" },
+//         }
+//       );
 
-  return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100 px-4">
-      <div className="w-full max-w-md bg-white shadow-lg rounded-2xl p-6 sm:p-8">
-        <h2 className="text-2xl sm:text-3xl font-bold text-center text-gray-800 mb-6">
-           Login
-        </h2>
+//       const { token, user } = response.data;
+//       login(token, user);
+//     } catch (err: any) {
+//       setError(err.response?.data?.message || "Login failed. Please try again.");
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Email */}
-          <div>
-            <label
-              htmlFor="email"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
-              Email Address
-            </label>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              value={form.email}
-              onChange={handleChange}
-              required
-              placeholder="Enter your email"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-400 sm:text-sm"
-            />
-          </div>
+//   return (
+//     <div className="flex items-center justify-center min-h-screen bg-gray-100 px-4">
+//       <div className="w-full max-w-md bg-white shadow-lg rounded-2xl p-6 sm:p-8">
+//         <h2 className="text-2xl font-bold text-gray-900 mb-2">
+//           Sign in to your account
+//         </h2>
+//         <p className="text-sm text-gray-600 mb-6">
+//           Don’t have an account?{" "}
+//           <a href="/Signup" className="text-red-600 font-semibold hover:underline">
+//             Sign Up
+//           </a>
+//         </p>
 
-          {/* Password */}
-          <div>
-            <label
-              htmlFor="password"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
-              Password
-            </label>
-            <input
-              type="password"
-              id="password"
-              name="password"
-              value={form.password}
-              onChange={handleChange}
-              required
-              placeholder="Enter your password"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-400 sm:text-sm"
-            />
-          </div>
+//         {error && <div className="mb-4 text-red-600 text-sm">{error}</div>}
 
-          {/* Submit Button */}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg transition duration-200 sm:text-base text-sm"
-          >
-            {loading ? "Logging in..." : "Login"}
-          </button>
-        </form>
+//         <form onSubmit={handleSubmit} className="space-y-4">
+//           {/* Email Input */}
+//           <div className="flex items-center border rounded-lg px-3 py-2">
+//             <FaEnvelope className="text-gray-400 mr-2" />
+//             <input
+//               type="email"
+//               name="email"
+//               value={form.email}
+//               onChange={handleChange}
+//               placeholder="Email"
+//               required
+//               className="w-full outline-none"
+//             />
+//           </div>
 
-        {/* Extra links */}
-        <div className="mt-4 flex flex-col sm:flex-row sm:justify-between text-sm text-gray-600">
-          <a href="#" className="hover:underline">
-            Forgot Password?
-          </a>
-          <a href="#" className="hover:underline">
-            Create an account
-          </a>
-        </div>
-      </div>
-    </div>
-  );
-};
+//           {/* Password Input */}
+//           <div className="flex items-center border rounded-lg px-3 py-2">
+//             <FaLock className="text-gray-400 mr-2" />
+//             <input
+//               type={showPassword ? "text" : "password"}
+//               name="password"
+//               value={form.password}
+//               onChange={handleChange}
+//               placeholder="Password"
+//               required
+//               className="w-full outline-none"
+//             />
+//            <button
+//   type="button"
+//   onClick={() => setShowPassword(!showPassword)}
+//   className="text-gray-500 ml-2 focus:outline-none"
+// >
+//   {showPassword ? <FaEyeSlash className="w-5 h-5" /> : <FaEye className="w-5 h-5" />}
+// </button>
+//           </div>
 
-export default Login;
+//           {/* Remember me + Forgot Password */}
+//           <div className="flex items-center justify-between text-sm">
+//             <label className="flex items-center space-x-2">
+//               <input type="checkbox" className="text-red-600" />
+//               <span className="text-gray-700">Remember me</span>
+//             </label>
+//                   </div>
+
+//           {/* Button */}
+//           <button
+//             type="submit"
+//             disabled={loading}
+//             className="w-full bg-gradient-to-r from-red-500 to-red-600 text-white py-2 rounded-lg font-semibold hover:opacity-90"
+//           >
+//             {loading ? "Logging in..." : "Sign In"}
+//           </button>
+//         </form>
+//       </div>
+//     </div>
+//   );
+// };
+
+// export default Login;

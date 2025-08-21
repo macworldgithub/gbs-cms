@@ -8,6 +8,7 @@ import {
   SettingsIcon,
   ShieldIcon,
   ShieldCheckIcon,
+  Gift
 } from "lucide-react";
 import { Bell } from "lucide-react";
 import { Button } from "../ui/button";
@@ -20,6 +21,7 @@ import { PermissionManager } from "./PermissionManager";
 import { LanguageManager } from "../LanguageManager";
 import NotificationMain from "./Notification";
 import BusinessManager from "./BusinessManager";
+import Offers from "./Offers";
 
 type AdminSection =
   | "overview"
@@ -31,7 +33,8 @@ type AdminSection =
   | "languages"
   | "notification"
   | "settings"
-  | "business";
+  | "business"
+  | "offers";
 
 export const AdminDashboard: React.FC = () => {
   const [activeSection, setActiveSection] = useState<AdminSection>("overview");
@@ -45,6 +48,7 @@ export const AdminDashboard: React.FC = () => {
     { id: "permissions", label: "Permissions", icon: ShieldCheckIcon },
     { id: "languages", label: "Languages", icon: LanguagesIcon },
     { id: "business", label: "Business", icon: BarChart3Icon },
+        { id: "offers", label: "Offers", icon: Gift },
     { id: "settings", label: "Settings", icon: SettingsIcon },
     { id: "notification", label: "Notification", icon: Bell },
   ];
@@ -71,6 +75,8 @@ export const AdminDashboard: React.FC = () => {
         return <NotificationMain />;
       case "business":
         return <BusinessManager />;
+      case "offers":
+        return <Offers />;
       default:
         return <AdminOverview />;
     }
