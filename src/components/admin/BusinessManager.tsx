@@ -45,10 +45,10 @@ export default function BusinessManager() {
     profile: "",
     industry: "",
     city: "",
-    services: [] as string[],          // ✅ always array
-    industriesServed: [] as string[],  // ✅ always array
+    services: [] as string[],          
+    industriesServed: [] as string[],  
     lookingFor: "",
-    socialLinks: [] as { platform: string; url: string }[], // ✅ always array of objects
+    socialLinks: [] as { platform: string; url: string }[], 
   });
   const [showingFeatured, setShowingFeatured] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -100,61 +100,7 @@ export default function BusinessManager() {
         : [...prev.tags, tag],
     }));
   };
-  // const handleSubmit = async (e: React.FormEvent) => {
-  //   e.preventDefault();
-
-  //   const ratingValue = business.rating ? parseFloat(business.rating) : 0;
-
-
-  //   const payload = {
-  //     companyName: business.name,
-  //     title: business.owner,
-  //     industry: business.industry,
-  //     state: business.location,
-  //     city: business.city,
-  //     about: business.about,
-  //     services: business.services || [],
-  //     industriesServed: business.industriesServed || [],
-  //     lookingFor: business.lookingFor,
-
-  //     phone: business.phone,
-  //     email: business.email,
-  //     website: business.website,
-  //     rating: ratingValue,
-  //     socialLinks: business.socialLinks
-  //       ? business.socialLinks.split(",").map((url: string) => ({
-  //         platform: "Link",
-  //         url: url.trim(),
-  //       }))
-  //       : [],
-  //     gallery: [],
-  //     testimonials: [],
-  //     memberSince: new Date().toISOString(),
-  //     specialOffers: [],
-  //     isFeatured: false,
-  //   };
-
-  //   try {
-  //     const response = await axios.post(`${API_BASE_URL}/business`, payload, {
-  //       headers: {
-  //         "Content-Type": "application/json",
-  //         Authorization: `Bearer ${AUTH_TOKEN}`,
-  //       },
-  //     });
-  //     console.log("Response:", response.data);
-  //     await fetchBusinesses();
-  //     toast.success("Business created successfully");
-  //     setIsModalOpen(false);
-  //     setBusiness(getEmptyBusiness());
-
-
-
-
-  //   } catch (error: any) {
-  //     console.error("Error adding business:", error.response?.data || error.message);
-  //   }
-  // };
-
+  
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -228,9 +174,7 @@ export default function BusinessManager() {
   };
 
 
-  // inside BusinessManager component
 
-  // 👉 Update function
   const handleUpdate = async (id: string) => {
     try {
       const payload = {
@@ -303,9 +247,9 @@ export default function BusinessManager() {
 
   useEffect(() => {
     if (keyword || stateFilter || industryFilter) {
-      searchBusinesses(); // filters active → search API call
+      searchBusinesses(); 
     } else {
-      fetchBusinesses(); // no filters → normal API call
+      fetchBusinesses(); 
     }
   }, [keyword, stateFilter, industryFilter, page]);
 
