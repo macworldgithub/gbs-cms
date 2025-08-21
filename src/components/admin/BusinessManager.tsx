@@ -7,7 +7,11 @@ import { Tag } from "antd";
 import { Input, Select } from "antd";
 import AddBusinessModal from "./AddBusinessModal";
 import { VITE_API_BASE_URL as API_BASE_URL, AUTH_TOKEN } from "../../utils/config/server";
-import { toast } from "react-toastify"; // Import toast
+import { toast } from "react-toastify";
+import { Upload } from "antd";
+import { UploadOutlined } from "@ant-design/icons";
+
+
 const states = ['VIC', 'NSW', 'QLD', 'SA', 'WA'];
 const industry = [
   'Professional Services',
@@ -80,7 +84,6 @@ export default function BusinessManager() {
     industriesServed: [],
     socialLinks: [],
   });
-
 
   const fetchBusinesses = async () => {
     try {
@@ -329,30 +332,71 @@ export default function BusinessManager() {
     }
   };
 
+
+  const handleLogoUpload = async (businessId: string, file: File) => {
+    try {
+      // 1. Get presigned URL from backend
+      const presignUrl = `${API_BASE_URL}/business/${businessId}/logo/upload-url?fileName=${encodeURIComponent(file.name)}&fileType=${encodeURIComponent(file.type)}`;
+
+      const presignRes = await axios.get(presignUrl, {
+        headers: { Authorization: `Bearer ${AUTH_TOKEN}` },
+      });
+
+      const { url, key } = presignRes.data;
+
+      // 2. Upload file to S3
+      await axios.put(url, file, {
+        headers: { "Content-Type": file.type },
+      });
+
+      // 3. Update business record with fileKey
+      await axios.patch(
+        `${API_BASE_URL}/business/${businessId}/logo`,
+        { fileKey: key },
+        {
+          headers: {
+            Authorization: `Bearer ${AUTH_TOKEN}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      toast.success("Logo uploaded successfully!");
+      await fetchBusinesses(); // refresh list
+    } catch (err: any) {
+      console.error("Logo upload error:", err);
+      toast.error(err.response?.data?.message || "Failed to upload logo");
+    }
+  };
+
   return (
     <div className="relative max-w-screen mx-auto p-6 ">
-      <div className="flex gap-2 justify-end">
-        <Button
-          onClick={() => setIsModalOpen(true)}
-          className="bg-[#ec2227] hover:bg-[#d41e23] text-white"
-        >
-          <PlusIcon className="w-4 h-4 mr-2" />
-          Add Business
-        </Button>
+      <div>
+        <h2 className="text-2xl font-bold text-gray-900">Business Management</h2>
 
-        <Button
-          onClick={() => {
-            if (showingFeatured) {
-              fetchBusinesses(); // reset to all
-              setShowingFeatured(false);
-            } else {
-              fetchFeaturedBusinesses(); // only featured
-            }
-          }}
-          className="bg-blue-600 hover:bg-blue-700 text-white"
-        >
-          {showingFeatured ? "Show All" : "Show Featured"}
-        </Button>
+        <div className="flex gap-2 justify-end">
+          <Button
+            onClick={() => setIsModalOpen(true)}
+            className="bg-[#ec2227] hover:bg-[#d41e23] text-white"
+          >
+            <PlusIcon className="w-4 h-4 mr-2" />
+            Add Business
+          </Button>
+
+          <Button
+            onClick={() => {
+              if (showingFeatured) {
+                fetchBusinesses(); // reset to all
+                setShowingFeatured(false);
+              } else {
+                fetchFeaturedBusinesses(); // only featured
+              }
+            }}
+            className="bg-blue-600 hover:bg-blue-700 text-white"
+          >
+            {showingFeatured ? "Show All" : "Show Featured"}
+          </Button>
+        </div>
       </div>
 
       <div className="flex gap-4 mt-4 ">
@@ -395,48 +439,80 @@ export default function BusinessManager() {
 
             <div key={b._id} className="bg-gray-50 p-4 rounded shadow flex justify-between items-start">
               <div>
-                <div className="font-bold text-lg">{b.companyName}</div>
-                <div className="text-sm text-gray-600">by {b.title}</div>
-                <div className="text-sm text-gray-600">{b.industry}</div>
-                <div className="flex items-center">
-                  <span className="text-yellow-500">★</span>
-                  <span className="ml-1">{b.rating}</span>
-                  <span className="ml-2 text-gray-500">{b.state}</span>
-                </div>
-                <p className="mt-1">{b.city}</p>
-                <p className="mt-1">{b.about}</p>
-                <p className="mt-2 text-sm">
-                  <span className="font-bold">Featured: </span>
-                  {b.isFeatured ? "Yes" : "No"}
-                </p>
-
-                <div className="flex flex-wrap gap-2 mt-2">
-                  <p className="text-sm font-bold">Services</p>
-                  {b.services?.length > 0 ? (
-                    b.services.map((service: string) => (
-                      <Tag color="blue" key={service}>
-                        {service}
-                      </Tag>
-                    ))
+                <div className="flex items-center gap-3">
+                  {b.logo ? (
+                    <img
+                      src={b.logo}
+                      alt={`${b.companyName} logo`}
+                      className="w-16 h-16 object-cover rounded-full border-2 border-gray-300 shadow-sm"
+                    />
                   ) : (
-                    <span className="text-gray-400">No services listed</span>
+                    <div className="w-16 h-16 flex items-center justify-center rounded-full border-2 border-dashed border-gray-400 bg-gray-100 text-gray-500 text-xs font-semibold shadow-sm">
+                      Upload Logo
+                    </div>
                   )}
+
+                  <div>
+                    <div className="font-bold text-lg">{b.companyName}</div>
+                    <div className="text-sm text-gray-600">by {b.title}</div>
+                    <div className="text-sm text-gray-600">{b.industry}</div>
+                    <div className="flex items-center">
+                      <span className="text-yellow-500">★</span>
+                      <span className="ml-1">{b.rating}</span>
+                      <span className="ml-2 text-gray-500">{b.state}</span>
+                    </div>
+                    <p className="mt-1">{b.city}</p>
+                    <p className="mt-1">{b.about}</p>
+                    <p className="mt-2 text-sm">
+                      <span className="font-bold">Featured: </span>
+                      {b.isFeatured ? "Yes" : "No"}
+                    </p>
+
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      <p className="text-sm font-bold">Services</p>
+                      {b.services?.length > 0 ? (
+                        b.services.map((service: string) => (
+                          <Tag color="blue" key={service}>
+                            {service}
+                          </Tag>
+                        ))
+                      ) : (
+                        <span className="text-gray-400">No services listed</span>
+                      )}
+                    </div>
+
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      <p className="text-sm font-bold">Industries Served</p>
+                      {b.industriesServed?.length > 0 ? (
+                        b.industriesServed.map((industry: string) => (
+                          <Tag color="green" key={industry}>
+                            {industry}
+                          </Tag>
+                        ))
+                      ) : (
+                        <span className="text-gray-400">No industries served</span>
+                      )}
+                    </div>
+                  </div>
                 </div>
 
-                <div className="flex flex-wrap gap-2 mt-2">
-                  <p className="text-sm font-bold">Industries Served</p>
-                  {b.industriesServed?.length > 0 ? (
-                    b.industriesServed.map((industry: string) => (
-                      <Tag color="green" key={industry}>
-                        {industry}
-                      </Tag>
-                    ))
-                  ) : (
-                    <span className="text-gray-400">No industries served</span>
-                  )}
-                </div>
+
+
               </div>
               <div className="flex items-center gap-2">
+                <Upload
+                  showUploadList={false}
+                  beforeUpload={(file) => {
+                    handleLogoUpload(b._id, file);
+                    return false; // prevent auto-upload
+                  }}
+                >
+                  <Button variant="outline" size="sm" className="text-blue-600">
+                    <UploadOutlined className="mr-1" /> Upload Logo
+                  </Button>
+                </Upload>
+
+
                 <Button
                   onClick={() => toggleFeatured(b._id, b.isFeatured)}
                   variant="outline"

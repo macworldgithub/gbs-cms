@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { VITE_API_BASE_URL as API_BASE_URL } from "../../utils/config/server";
 import {
   UsersIcon,
   CalendarIcon,
@@ -8,6 +9,7 @@ import {
   SettingsIcon,
   ShieldIcon,
   ShieldCheckIcon,
+  Gift,
 } from "lucide-react";
 import { Bell } from "lucide-react";
 import { Button } from "../ui/button";
@@ -20,6 +22,7 @@ import { PermissionManager } from "./PermissionManager";
 import { LanguageManager } from "../LanguageManager";
 import NotificationMain from "./Notification";
 import BusinessManager from "./BusinessManager";
+import axios from "axios";
 
 type AdminSection =
   | "overview"
@@ -39,13 +42,13 @@ export const AdminDashboard: React.FC = () => {
   const menuItems = [
     { id: "overview", label: "Overview", icon: BarChart3Icon },
     { id: "users", label: "Users", icon: UsersIcon },
-    { id: "events", label: "Events", icon: CalendarIcon },
-    { id: "chats", label: "Chats", icon: MessageSquareIcon },
+    // { id: "events", label: "Events", icon: CalendarIcon },
+    // { id: "chats", label: "Chats", icon: MessageSquareIcon },
     { id: "roles", label: "Roles", icon: ShieldIcon },
     { id: "permissions", label: "Permissions", icon: ShieldCheckIcon },
-    { id: "languages", label: "Languages", icon: LanguagesIcon },
+    // { id: "languages", label: "Languages", icon: LanguagesIcon },
     { id: "business", label: "Business", icon: BarChart3Icon },
-    { id: "settings", label: "Settings", icon: SettingsIcon },
+    // { id: "settings", label: "Settings", icon: SettingsIcon },
     { id: "notification", label: "Notification", icon: Bell },
   ];
 
@@ -112,49 +115,97 @@ export const AdminDashboard: React.FC = () => {
 };
 
 const AdminOverview: React.FC = () => {
+  const [stats, setStats] = useState({
+    totalUsers: 0,
+    totalBusinesses: 0,
+    totalRoles: 0,
+    totalOffers: 0,
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const res = await axios.get(
+          `${API_BASE_URL}/analytics/dashboard-counts`
+        );
+        setStats({
+          totalUsers: res.data.totalUsers,
+          totalBusinesses: res.data.totalBusinesses,
+          totalOffers: res.data.totalOffers,
+          totalRoles: res.data.totalRoles,
+        });
+      } catch (error) {
+        console.error("Error fetching dashboard stats:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStats();
+  }, []);
   return (
     <div className="p-6">
       <h2 className="text-2xl font-bold text-gray-900 mb-6">
         Dashboard Overview
       </h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <Card className="p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Total Users</p>
-              <p className="text-2xl font-bold text-gray-900">1,234</p>
+       {loading ? (
+        <p>Loading stats...</p>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <Card className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Total Users</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {stats.totalUsers}
+                </p>
+              </div>
+              <UsersIcon className="w-8 h-8 text-[#ec2227]" />
             </div>
-            <UsersIcon className="w-8 h-8 text-[#ec2227]" />
-          </div>
-        </Card>
-        <Card className="p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Total Events</p>
-              <p className="text-2xl font-bold text-gray-900">56</p>
+          </Card>
+
+          <Card className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">
+                  Total Businesses
+                </p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {stats.totalBusinesses}
+                </p>
+              </div>
+              <BarChart3Icon className="w-8 h-8 text-[#ec2227]" />
             </div>
-            <CalendarIcon className="w-8 h-8 text-[#ec2227]" />
-          </div>
-        </Card>
-        <Card className="p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Active Chats</p>
-              <p className="text-2xl font-bold text-gray-900">89</p>
+          </Card>
+
+          <Card className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">
+                  Total Offers
+                </p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {stats.totalOffers}
+                </p>
+              </div>
+              <Gift className="w-8 h-8 text-[#ec2227]" />
             </div>
-            <MessageSquareIcon className="w-8 h-8 text-[#ec2227]" />
-          </div>
-        </Card>
-        <Card className="p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Total Roles</p>
-              <p className="text-2xl font-bold text-gray-900">12</p>
+          </Card>
+
+          <Card className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Total Roles</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {stats.totalRoles}
+                </p>
+              </div>
+              <ShieldIcon className="w-8 h-8 text-[#ec2227]" />
             </div>
-            <ShieldIcon className="w-8 h-8 text-[#ec2227]" />
-          </div>
-        </Card>
-      </div>
+          </Card>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card className="p-6">
