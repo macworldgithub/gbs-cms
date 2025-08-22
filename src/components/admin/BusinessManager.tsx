@@ -8,7 +8,7 @@ import { VITE_API_BASE_URL as API_BASE_URL, AUTH_TOKEN } from "../../utils/confi
 import { Button } from "../ui/button";
 import AddBusinessModal from "./AddBusinessModal";
 import EditBusinessModal from "./EditBusinessModal";
-import { Images, Star } from "lucide-react"; 
+import { Images, Star } from "lucide-react";
 
 const states = ['VIC', 'NSW', 'QLD', 'SA', 'WA'];
 const industry = [
@@ -61,6 +61,8 @@ export default function BusinessManager() {
   const [page, setPage] = useState(1);
   const [limit] = useState(10); // fixed per page
   const [business, setBusiness] = useState(getEmptyBusiness());
+  const [showingNewMembers, setShowingNewMembers] = useState(false);
+
 
   const fetchBusinesses = async () => {
     try {
@@ -214,9 +216,6 @@ export default function BusinessManager() {
     }
   };
 
-
-
-
   const searchBusinesses = async () => {
     try {
       const params = new URLSearchParams();
@@ -274,17 +273,57 @@ export default function BusinessManager() {
 
 
 
-  const toggleFeatured = async (id: string, currentStatus: boolean) => {
+  const toggleFeatured = async (id: string, currentStatus: boolean, businessData: any) => {
     try {
-      const payload = { isFeatured: !currentStatus };
-      await axios.put(`${API_BASE_URL}/business/${id}`, payload, {
+      const payload = {
+        companyName: businessData.companyName,
+        title: businessData.title,
+        industry: businessData.industry,
+        state: businessData.state,
+        city: businessData.city,
+        about: businessData.about,
+        services: businessData.services || [],
+        industriesServed: businessData.industriesServed || [],
+        lookingFor: businessData.lookingFor,
+        phone: businessData.phone,
+        email: businessData.email,
+        website: businessData.website,
+        rating: businessData.rating || 0,
+        socialLinks: businessData.socialLinks || [],
+        // yaha isFeatured flip karo
+        isFeatured: !currentStatus,
+      };
+      await axios.patch(`${API_BASE_URL}/business/${id}`, payload, {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${AUTH_TOKEN}`,
         },
       });
       toast.success(`Business marked as ${!currentStatus ? "Featured" : "Not Featured"}`);
-      await fetchBusinesses(); // refresh list
+      // await fetchBusinesses(); 
+      if (showingFeatured) {
+        // agar featured list dekh rahe hain
+        if (currentStatus) {
+          // unfeatured kiya → remove from list
+          setBusinessList((prev) => prev.filter((b) => b._id !== id));
+        } else {
+          // featured kiya (rare case agar mixed list aa jaye)
+          setBusinessList((prev) =>
+            prev.map((b) => (b._id === id ? { ...b, isFeatured: true } : b))
+          );
+        }
+      } else {
+        // agar normal list dekh rahe hain
+        if (!currentStatus) {
+          // featured kiya → remove from list
+          setBusinessList((prev) => prev.filter((b) => b._id !== id));
+        } else {
+          // unfeatured kiya → update value
+          setBusinessList((prev) =>
+            prev.map((b) => (b._id === id ? { ...b, isFeatured: false } : b))
+          );
+        }
+      }
     } catch (error: any) {
       console.error("Error toggling featured:", error.response?.data || error.message);
       toast.error("Failed to update featured status");
@@ -329,9 +368,6 @@ export default function BusinessManager() {
   };
 
 
-  // inside BusinessManager component
-
-  // 📌 Upload Gallery Function
   const handleGalleryUpload = async (businessId: string, files: File[]) => {
     if (!files || files.length === 0) {
       toast.error("Please select at least one image");
@@ -339,13 +375,13 @@ export default function BusinessManager() {
     }
 
     try {
-      // 1. Prepare file metadata
+
       const fileData = files.map((file) => ({
         fileName: file.name,
         fileType: file.type,
       }));
 
-      // 2. Request presigned URLs
+
       const presignRes = await axios.post(
         `${API_BASE_URL}/business/${businessId}/gallery/upload-urls`,
         fileData,
@@ -359,7 +395,7 @@ export default function BusinessManager() {
 
       const { urls } = presignRes.data;
 
-      // 3. Upload to S3
+
       await Promise.all(
         urls.map((urlData: any, index: number) =>
           axios.put(urlData.url, files[index], {
@@ -368,7 +404,7 @@ export default function BusinessManager() {
         )
       );
 
-      // 4. Add fileKeys to business gallery
+
       const fileKeys = urls.map((u: any) => u.key);
       await axios.patch(
         `${API_BASE_URL}/business/${businessId}/gallery`,
@@ -388,6 +424,26 @@ export default function BusinessManager() {
       toast.error(err.response?.data?.message || "Failed to upload gallery images");
     }
   };
+
+  const fetchNewMembers = async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/business/new-members`, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${AUTH_TOKEN}`,
+        },
+      });
+
+      console.log("New member businesses:", response.data);
+      setBusinessList(response.data || []);
+      setShowingNewMembers(true);
+      setShowingFeatured(false);
+    } catch (error: any) {
+      console.error("Error fetching new members:", error);
+      toast.error("Failed to fetch new member businesses");
+    }
+  };
+
 
 
   return (
@@ -412,14 +468,36 @@ export default function BusinessManager() {
               if (showingFeatured) {
                 fetchBusinesses(); // reset to all
                 setShowingFeatured(false);
-              } else {
-                fetchFeaturedBusinesses(); // only featured
+              } else if (showingNewMembers) {
+                // agar new members list dekh rahe ho → featured/unfeatured karne pe bas update state
+                setBusinessList((prev) =>
+                  prev.map((b) => ({ ...b, isFeatured: !b.isFeatured }))
+                );
+              }
+              else {
+                fetchFeaturedBusinesses(); 
               }
             }}
             className="bg-blue-600 hover:bg-blue-700 text-white"
           >
             {showingFeatured ? "Show All" : "Show Featured"}
           </Button>
+
+          <Button
+            onClick={() => {
+              if (showingNewMembers) {
+                fetchBusinesses();
+                setShowingNewMembers(false);
+              } else {
+                fetchNewMembers();
+              }
+            }}
+            className="bg-green-600 hover:bg-green-700 text-white"
+          >
+            {showingNewMembers ? "Show All" : "Show New Members"}
+          </Button>
+
+
         </div>
       </div>
 
@@ -551,80 +629,79 @@ export default function BusinessManager() {
 
               {/* Right Side (Buttons) */}
               <div className="flex flex-col items-end gap-2 col-span-3">
-  {/* Upload Logo */}
-  <Upload
-    showUploadList={false}
-    beforeUpload={(file) => {
-      handleLogoUpload(b._id, file);
-      return false;
-    }}
-  >
-    <Button className="w-10 h-10 flex items-center justify-center rounded-full bg-blue-50 text-blue-600 hover:bg-blue-100 shadow-sm">
-      <UploadOutlined />
-    </Button>
-  </Upload>
+                {/* Upload Logo */}
+                <Upload
+                  showUploadList={false}
+                  beforeUpload={(file) => {
+                    handleLogoUpload(b._id, file);
+                    return false;
+                  }}
+                >
+                  <Button className="w-10 h-10 flex items-center justify-center rounded-full bg-blue-50 text-blue-600 hover:bg-blue-100 shadow-sm">
+                    <UploadOutlined />
+                  </Button>
+                </Upload>
 
-  {/* Upload Gallery */}
-  <Upload
-    multiple
-    showUploadList={false}
-    beforeUpload={(file, fileList) => {
-      handleGalleryUpload(b._id, fileList as File[]);
-      return false;
-    }}
-  >
-    <Button className="w-10 h-10 flex items-center justify-center rounded-full bg-purple-50 text-purple-600 hover:bg-purple-100 shadow-sm">
-      <Images className="w-5 h-5" />
-    </Button>
-  </Upload>
+                {/* Upload Gallery */}
+                <Upload
+                  multiple
+                  showUploadList={false}
+                  beforeUpload={(file, fileList) => {
+                    handleGalleryUpload(b._id, fileList as File[]);
+                    return false;
+                  }}
+                >
+                  <Button className="w-10 h-10 flex items-center justify-center rounded-full bg-purple-50 text-purple-600 hover:bg-purple-100 shadow-sm">
+                    <Images className="w-5 h-5" />
+                  </Button>
+                </Upload>
 
-  {/* Mark Featured */}
-  <Button
-    onClick={() => toggleFeatured(b._id, b.isFeatured)}
-    className={`w-10 h-10 flex items-center justify-center rounded-full shadow-sm ${
-      b.isFeatured
-        ? "bg-green-50 text-green-600 hover:bg-green-100"
-        : "bg-gray-50 text-gray-600 hover:bg-gray-100"
-    }`}
-  >
-    <Star className="w-5 h-5" />
-  </Button>
+                {/* Mark Featured */}
+                <Button
+                  onClick={() => toggleFeatured(b._id, b.isFeatured, b)}
+                  className={`w-10 h-10 flex items-center justify-center rounded-full shadow-sm ${b.isFeatured
+                      ? "bg-green-50 text-green-600 hover:bg-green-100"
+                      : "bg-gray-50 text-gray-600 hover:bg-gray-100"
+                    }`}
+                >
+                  <Star className="w-5 h-5" />
+                </Button>
 
-  {/* Edit */}
-  <Button
-    onClick={() => {
-      setSelectedBusiness(b);
-      setBusiness({
-        ...b,
-        name: b.companyName || "",
-        owner: b.title || "",
-        rating: b.rating?.toString() || "",
-        about: b.about || "",
-        website: b.website || "",
-        state: b.state || "",
-        city: b.city || "",
-        services: b.services || [],
-        industriesServed: b.industriesServed || [],
-        lookingFor: b.lookingFor || "",
-        phone: b.phone || "",
-        email: b.email || "",
-        socialLinks: b.socialLinks || [],
-      });
-      setIsEditModalOpen(true);
-    }}
-    className="w-10 h-10 flex items-center justify-center rounded-full bg-yellow-50 text-yellow-600 hover:bg-yellow-100 shadow-sm"
-  >
-    <PencilIcon className="w-5 h-5" />
-  </Button>
+                {/* Edit */}
+                <Button
+                  onClick={() => {
+                    setSelectedBusiness(b);
+                    setBusiness({
+                      ...b,
+                      name: b.companyName || "",
+                      owner: b.title || "",
+                      rating: b.rating?.toString() || "",
+                      about: b.about || "",
+                      website: b.website || "",
+                      state: b.state || "",
+                      city: b.city || "",
+                      services: b.services || [],
+                      industriesServed: b.industriesServed || [],
+                      lookingFor: b.lookingFor || "",
+                      phone: b.phone || "",
+                      email: b.email || "",
+                      socialLinks: b.socialLinks || [],
+                    });
+                    setIsEditModalOpen(true);
+                  }}
+                  className="w-10 h-10 flex items-center justify-center rounded-full bg-yellow-50 text-yellow-600 hover:bg-yellow-100 shadow-sm"
+                >
+                  <PencilIcon className="w-5 h-5" />
+                </Button>
 
-  {/* Delete */}
-  <Button
-    onClick={() => handleDelete(b._id || b.id)}
-    className="w-10 h-10 flex items-center justify-center rounded-full bg-red-50 text-red-600 hover:bg-red-100 shadow-sm"
-  >
-    <TrashIcon className="w-5 h-5" />
-  </Button>
-</div>
+                {/* Delete */}
+                <Button
+                  onClick={() => handleDelete(b._id || b.id)}
+                  className="w-10 h-10 flex items-center justify-center rounded-full bg-red-50 text-red-600 hover:bg-red-100 shadow-sm"
+                >
+                  <TrashIcon className="w-5 h-5" />
+                </Button>
+              </div>
             </div>
 
           ))
