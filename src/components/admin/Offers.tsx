@@ -277,199 +277,6 @@ export default function Offers() {
     </div>
   );
 }
-
-/* ---------------- Add Offer Modal ---------------- */
-// function AddOfferModal({
-//   onClose,
-//   onSave,
-// }: {
-//   onClose: () => void;
-//   onSave: (offer: Offer) => void;
-// }) {
-//   const businessId = "689f2cf22d8e4cc1c2d1c785"; // 🔑 fix businessId
-
-//   const [form, setForm] = useState({
-//     image: "offer/12345/image/offer-promo.jpg",
-//     title: "",
-//     discount: "",
-//     offerType: "Member",
-//     category: "",
-//     expiryDate: "",
-//     description: "",
-//     termsAndConditions: [""],
-//     howToRedeem: "",
-//     contactPhone: "",
-//     contactEmail: "",
-//     locations: [""],
-//   });
-
-//   const [loading, setLoading] = useState(false);
-
-//   const update = (
-//     e: React.ChangeEvent<
-//       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-//     >
-//   ) => {
-//     const { name, value } = e.target;
-//     setForm((f) => ({
-//       ...f,
-//       [name]: value,
-//     }));
-//   };
-
-//   const handleSave = async () => {
-//     try {
-//       setLoading(true);
-//       const res = await fetch(
-//         `${API_BASE_URL}/offer/${businessId}`,
-//         {
-//           method: "POST",
-//           headers: { "Content-Type": "application/json" },
-//           body: JSON.stringify({
-//             ...form,
-//             expiryDate: new Date(form.expiryDate).toISOString(),
-//             locations: form.locations.filter((l) => l.trim() !== ""),
-//             termsAndConditions: form.termsAndConditions.filter(
-//               (t) => t.trim() !== ""
-//             ),
-//           }),
-//         }
-//       );
-//       if (!res.ok) throw new Error("Failed to add offer");
-//       const created = await res.json();
-//       onSave(created); // parent state update
-//       toast.success("Offer added successfully");
-//       onClose(); // ✅ modal close after save
-//     } catch (err) {
-//       console.error("Error adding offer:", err);
-//       toast.error("Failed to add offer");
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   return (
-//     <div className="fixed inset-0 z-50 flex items-center justify-center">
-//       {/* Background overlay */}
-//       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-
-//       {/* Modal box with scroll */}
-//       <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-[520px] max-h-[90vh] overflow-y-auto p-5">
-//         <h4 className="text-lg font-semibold mb-4">Add New Offer</h4>
-//         <div className="space-y-3">
-//           <LabeledInput
-//             label="Title"
-//             name="title"
-//             value={form.title}
-//             onChange={update}
-//           />
-//           <LabeledInput
-//             label="Discount"
-//             name="discount"
-//             value={form.discount}
-//             onChange={update}
-//           />
-//           <LabeledInput
-//             label="Expiry Date"
-//             name="expiryDate"
-//             type="date"
-//             value={form.expiryDate}
-//             onChange={update}
-//           />
-//           <textarea
-//             name="description"
-//             placeholder="Description"
-//             value={form.description}
-//             onChange={update}
-//             rows={3}
-//             className="w-full border rounded-lg px-3 py-2 bg-gray-50"
-//           />
-//           <LabeledInput
-//             label="Location (comma separated)"
-//             name="locations"
-//             value={form.locations.join(", ")}
-//             onChange={(e) =>
-//               setForm((f) => ({
-//                 ...f,
-//                 locations: e.target.value.split(",").map((l) => l.trim()),
-//               }))
-//             }
-//           />
-//           <LabeledInput
-//             label="Contact Phone"
-//             name="contactPhone"
-//             value={form.contactPhone}
-//             onChange={update}
-//           />
-//           <LabeledInput
-//             label="Contact Email"
-//             name="contactEmail"
-//             value={form.contactEmail}
-//             onChange={update}
-//           />
-//           <textarea
-//             name="termsAndConditions"
-//             placeholder="Terms and Conditions (one per line)"
-//             value={form.termsAndConditions.join("\n")}
-//             onChange={(e) =>
-//               setForm((f) => ({
-//                 ...f,
-//                 termsAndConditions: e.target.value
-//                   .split("\n")
-//                   .map((t) => t.trim()),
-//               }))
-//             }
-//             rows={3}
-//             className="w-full border rounded-lg px-3 py-2 bg-gray-50"
-//           />
-//           <LabeledInput
-//             label="How to Redeem"
-//             name="howToRedeem"
-//             value={form.howToRedeem}
-//             onChange={update}
-//           />
-//           <div>
-//             <label className="block text-sm font-medium text-gray-700 mb-1">
-//               Offer Type
-//             </label>
-//             <select
-//               name="offerType"
-//               value={form.offerType}
-//               onChange={update}
-//               className="w-full border rounded-lg px-3 py-2 bg-gray-50"
-//             >
-//               <option value="Member">Member</option>
-//               <option value="Partner">Partner</option>
-//             </select>
-//           </div>
-//           <LabeledInput
-//             label="Category"
-//             name="category"
-//             value={form.category}
-//             onChange={update}
-//           />
-//         </div>
-
-//         {/* Buttons */}
-//         <div className="mt-5 flex justify-end gap-2 sticky bottom-0 bg-white pt-3">
-//           <Button onClick={onClose} variant="outline">
-//             Cancel
-//           </Button>
-//           <Button
-//             className="bg-[#ec2227] hover:bg-[#ec2227] text-white"
-//             onClick={handleSave}
-//             disabled={loading}
-//           >
-//             {loading ? "Saving..." : "Save"}
-//           </Button>
-//         </div>
-//       </div>
-//     </div>
-//   );
-// }
-
-
-
 /* ---------------- Add Offer Modal ---------------- */
 function AddOfferModal({
   onClose,
@@ -479,7 +286,7 @@ function AddOfferModal({
   onSave: (offer: Offer) => void;
 }) {
   const [form, setForm] = useState({
-    businessId: "", // 🔑 businessId dynamic
+    businessId: "",
     image: "offer/12345/image/offer-promo.jpg",
     title: "",
     discount: "",
@@ -497,7 +304,6 @@ function AddOfferModal({
   const [loading, setLoading] = useState(false);
   const [businesses, setBusinesses] = useState<any[]>([]);
 
-  // Fetch all businesses when modal opens
   useEffect(() => {
     const fetchBusinesses = async () => {
       try {
