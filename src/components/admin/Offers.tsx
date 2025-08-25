@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react"; 
+import React, { useState, useEffect } from "react";
 import { Button } from "../ui/button";
 import { Card } from "../ui/card";
 import { toast } from "react-toastify";
@@ -11,10 +11,13 @@ import {
   LocateIcon,
   Pencil,
   Trash2,
+  Phone,
+  Mail,
+  FileText
 } from "lucide-react";
 
 type Offer = {
-  _id: string;  // ✅ MongoDB ka _id use karo
+  _id: string;
   title: string;
   offerType: "Member" | "Partner";
   category: string;
@@ -29,7 +32,7 @@ export default function Offers() {
   const [open, setOpen] = useState(false);
   const [editOffer, setEditOffer] = useState<Offer | null>(null);
   const [loading, setLoading] = useState(false);
-
+  const [viewOfferId, setViewOfferId] = useState<string | null>(null);
   const [filters, setFilters] = useState({
     category: "",
     offerType: "",
@@ -240,19 +243,26 @@ export default function Offers() {
                       </span>
                     </div>
 
-                    <div className="ml-auto">
+                    <div className="ml-auto flex gap-2">
+                      <Button
+                        onClick={() => setViewOfferId(o._id)}
+                        className="bg-[#ec2227] hover:bg-[#d41e23] text-white rounded-lg"
+                      >
+                        View Details
+                      </Button>
+
                       <Button className="bg-[#ec2227] hover:bg-[#d41e23] text-white rounded-lg">
                         Redeem
                       </Button>
+                      </div>
+                    </div>
+
+                    <div className="mt-3 flex items-start gap-2 text-xs sm:text-sm text-gray-600 p-3">
+                      <LocateIcon className="w-4 h-4 shrink-0 text-gray-500" />
+                      <span className="leading-relaxed">{o.locations}</span>
                     </div>
                   </div>
-
-                  <div className="mt-3 flex items-start gap-2 text-xs sm:text-sm text-gray-600 p-3">
-                    <LocateIcon className="w-4 h-4 shrink-0 text-gray-500" />
-                    <span className="leading-relaxed">{o.locations}</span>
-                  </div>
                 </div>
-              </div>
             </Card>
           ))
         )}
@@ -274,6 +284,144 @@ export default function Offers() {
           }}
         />
       )}
+
+     {viewOfferId && (
+  <OfferDetailsModal
+    offerId={viewOfferId}
+    initialOffer={offers.find((o) => o._id === viewOfferId)} 
+    onClose={() => setViewOfferId(null)}
+  />
+)}
+    </div>
+  );
+}
+
+// OfferDetails
+type OfferDetails = {
+  _id: string;
+  title: string;
+  discount: string;
+  description: string;
+  termsAndConditions: string[];
+  howToRedeem: string;
+  contactPhone: string;
+  contactEmail: string;
+  locations: string[];
+  expiryDate: string;
+  image?: string;
+};
+
+function OfferDetailsModal({
+  offerId,
+  initialOffer,   
+  onClose,
+}: {
+  offerId: string;
+  initialOffer?: Offer; 
+  onClose: () => void;
+}) {
+  const [offer, setOffer] = useState<OfferDetails | null>(null);
+  const [loading, setLoading] = useState(!initialOffer);
+
+  useEffect(() => {
+    if (!offerId || offer) return;
+
+    const fetchOfferDetails = async () => {
+      try {
+        setLoading(true);
+        const res = await fetch(`${API_BASE_URL}/offer/${offerId}`);
+        if (!res.ok) throw new Error("Failed to fetch offer details");
+        const data = await res.json();
+        setOffer(data);
+      } catch (error) {
+        console.error("Error fetching offer details:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchOfferDetails();
+  }, [offerId]);
+
+  useEffect(() => {
+    if (initialOffer) {
+      setOffer((prev) => ({ ...initialOffer, ...prev } as OfferDetails));
+    }
+  }, [initialOffer]);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      {/* Overlay */}
+      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
+
+      {/* Modal box */}
+      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-[600px] max-h-[90vh] overflow-y-auto p-6">
+        {loading ? (
+          <p className="text-center py-10">Loading...</p>
+        ) : !offer ? (
+          <p className="text-center py-10 text-gray-600">No offer found</p>
+        ) : (
+          <div className="space-y-4">
+            <h2 className="text-xl font-bold">{offer.title}</h2>
+            <p className="text-red-500 font-semibold">{offer.discount}</p>
+            <p className="text-gray-700">{offer.description}</p>
+
+            <p className="flex items-center text-sm text-gray-600">
+              <CalendarDays className="w-4 h-4 mr-1" />
+              Expires: {new Date(offer.expiryDate).toLocaleDateString()}
+            </p>
+
+            <p className="flex items-center text-sm text-gray-600">
+              <LocateIcon className="w-4 h-4 mr-1" />
+              {Array.isArray(offer.locations)
+                ? offer.locations.join(", ")
+                : offer.locations}
+            </p>
+
+            {offer.contactPhone && (
+              <p className="flex items-center text-sm text-gray-600">
+                <Phone className="w-4 h-4 mr-1" /> {offer.contactPhone}
+              </p>
+            )}
+
+            {offer.contactEmail && (
+              <p className="flex items-center text-sm text-gray-600">
+                <Mail className="w-4 h-4 mr-1" /> {offer.contactEmail}
+              </p>
+            )}
+
+            {offer.termsAndConditions?.length > 0 && (
+              <div>
+                <h4 className="font-semibold mt-2 flex items-center">
+                  <FileText className="w-4 h-4 mr-1" /> Terms & Conditions
+                </h4>
+                <ul className="list-disc ml-6 text-sm text-gray-700">
+                  {offer.termsAndConditions.map((term, idx) => (
+                    <li key={idx}>{term}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {offer.howToRedeem && (
+              <div>
+                <h4 className="font-semibold mt-2">How to Redeem</h4>
+                <p className="text-sm text-gray-700">{offer.howToRedeem}</p>
+              </div>
+            )}
+
+            {/* Close Button */}
+            <div className="flex justify-end">
+              <Button
+                onClick={onClose}
+                className="bg-[#ec2227] hover:bg-[#d41e23] text-white"
+              >
+                Close
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

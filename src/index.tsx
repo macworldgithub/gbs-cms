@@ -49,7 +49,6 @@ import { PermissionProvider } from "./contexts/PermissionContext";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import "../index.css";
-
 createRoot(document.getElementById("app") as HTMLElement).render(
   <StrictMode>
     <AppProvider>
