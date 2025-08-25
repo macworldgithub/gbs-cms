@@ -299,17 +299,27 @@ export default function Offers() {
 // OfferDetails
 type OfferDetails = {
   _id: string;
+  business: string | null;
+  image?: string;
   title: string;
   discount: string;
+  offerType: string;
+  category: string;
+  expiryDate: string;
   description: string;
   termsAndConditions: string[];
   howToRedeem: string;
   contactPhone: string;
   contactEmail: string;
   locations: string[];
-  expiryDate: string;
-  image?: string;
+  redemptionCount: number;
+  savedBy: string[];
+  reviews: any[]; 
+  createdAt: string;
+  updatedAt: string;
+  __v: number;
 };
+
 
 function OfferDetailsModal({
   offerId,
@@ -362,55 +372,80 @@ function OfferDetailsModal({
           <p className="text-center py-10 text-gray-600">No offer found</p>
         ) : (
           <div className="space-y-4">
-            <h2 className="text-xl font-bold">{offer.title}</h2>
-            <p className="text-red-500 font-semibold">{offer.discount}</p>
-            <p className="text-gray-700">{offer.description}</p>
+  <h2 className="text-xl font-bold">{offer.title}</h2>
+  <p className="text-red-500 font-semibold">{offer.discount}</p>
+  <p className="text-gray-700">{offer.description}</p>
 
-            <p className="flex items-center text-sm text-gray-600">
-              <CalendarDays className="w-4 h-4 mr-1" />
-              Expires: {new Date(offer.expiryDate).toLocaleDateString()}
-            </p>
+  {/* Category & Offer Type */}
+  <p className="text-sm text-gray-600">
+    <strong>Category:</strong> {offer.category}
+  </p>
+  <p className="text-sm text-gray-600">
+    <strong>Type:</strong> {offer.offerType}
+  </p>
 
-            <p className="flex items-center text-sm text-gray-600">
-              <LocateIcon className="w-4 h-4 mr-1" />
-              {Array.isArray(offer.locations)
-                ? offer.locations.join(", ")
-                : offer.locations}
-            </p>
+  {/* Expiry */}
+  <p className="flex items-center text-sm text-gray-600">
+    <CalendarDays className="w-4 h-4 mr-1" />
+    Expires: {new Date(offer.expiryDate).toLocaleDateString()}
+  </p>
 
-            {offer.contactPhone && (
-              <p className="flex items-center text-sm text-gray-600">
-                <Phone className="w-4 h-4 mr-1" /> {offer.contactPhone}
-              </p>
-            )}
+  {/* Locations */}
+  <p className="flex items-center text-sm text-gray-600">
+    <LocateIcon className="w-4 h-4 mr-1" />
+    {offer.locations.join(", ")}
+  </p>
 
-            {offer.contactEmail && (
-              <p className="flex items-center text-sm text-gray-600">
-                <Mail className="w-4 h-4 mr-1" /> {offer.contactEmail}
-              </p>
-            )}
+  {/* Phone */}
+  {offer.contactPhone && (
+    <p className="flex items-center text-sm text-gray-600">
+      <Phone className="w-4 h-4 mr-1" /> {offer.contactPhone}
+    </p>
+  )}
 
-            {offer.termsAndConditions?.length > 0 && (
-              <div>
-                <h4 className="font-semibold mt-2 flex items-center">
-                  <FileText className="w-4 h-4 mr-1" /> Terms & Conditions
-                </h4>
-                <ul className="list-disc ml-6 text-sm text-gray-700">
-                  {offer.termsAndConditions.map((term, idx) => (
-                    <li key={idx}>{term}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
+  {/* Email */}
+  {offer.contactEmail && (
+    <p className="flex items-center text-sm text-gray-600">
+      <Mail className="w-4 h-4 mr-1" /> {offer.contactEmail}
+    </p>
+  )}
 
-            {offer.howToRedeem && (
-              <div>
-                <h4 className="font-semibold mt-2">How to Redeem</h4>
-                <p className="text-sm text-gray-700">{offer.howToRedeem}</p>
-              </div>
-            )}
+  {/* Terms */}
+  {offer.termsAndConditions?.length > 0 && (
+    <div>
+      <h4 className="font-semibold mt-2 flex items-center">
+        <FileText className="w-4 h-4 mr-1" /> Terms & Conditions
+      </h4>
+      <ul className="list-disc ml-6 text-sm text-gray-700">
+        {offer.termsAndConditions.map((term, idx) => (
+          <li key={idx}>{term}</li>
+        ))}
+      </ul>
+    </div>
+  )}
 
-            {/* Close Button */}
+  {/* Redeem instructions */}
+  {offer.howToRedeem && (
+    <div>
+      <h4 className="font-semibold mt-2">How to Redeem</h4>
+      <p className="text-sm text-gray-700">{offer.howToRedeem}</p>
+    </div>
+  )}
+
+  {/* Extra Info */}
+  <p className="text-sm text-gray-600">
+    <strong>Redemptions:</strong> {offer.redemptionCount}
+  </p>
+  <p className="text-sm text-gray-600">
+    <strong>Created At:</strong> {new Date(offer.createdAt).toLocaleString()}
+  </p>
+  <p className="text-sm text-gray-600">
+    <strong>Updated At:</strong> {new Date(offer.updatedAt).toLocaleString()}
+  </p>
+</div>
+ 
+        )}
+        {/* Close Button */}
             <div className="flex justify-end">
               <Button
                 onClick={onClose}
@@ -419,8 +454,6 @@ function OfferDetailsModal({
                 Close
               </Button>
             </div>
-          </div>
-        )}
       </div>
     </div>
   );
