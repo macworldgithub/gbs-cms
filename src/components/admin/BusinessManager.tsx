@@ -8,7 +8,7 @@ import { VITE_API_BASE_URL as API_BASE_URL, AUTH_TOKEN } from "../../utils/confi
 import { Button } from "../ui/button";
 import AddBusinessModal from "./AddBusinessModal";
 import EditBusinessModal from "./EditBusinessModal";
-
+import { Images, Star } from "lucide-react";
 
 const states = ['VIC', 'NSW', 'QLD', 'SA', 'WA'];
 const industry = [
@@ -45,10 +45,10 @@ export default function BusinessManager() {
     profile: "",
     industry: "",
     city: "",
-    services: [] as string[],          
-    industriesServed: [] as string[],  
+    services: [] as string[],
+    industriesServed: [] as string[],
     lookingFor: "",
-    socialLinks: [] as { platform: string; url: string }[], 
+    socialLinks: [] as { platform: string; url: string }[],
   });
   const [showingFeatured, setShowingFeatured] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -61,6 +61,8 @@ export default function BusinessManager() {
   const [page, setPage] = useState(1);
   const [limit] = useState(10); // fixed per page
   const [business, setBusiness] = useState(getEmptyBusiness());
+  const [showingNewMembers, setShowingNewMembers] = useState(false);
+
 
   const fetchBusinesses = async () => {
     try {
@@ -100,7 +102,7 @@ export default function BusinessManager() {
         : [...prev.tags, tag],
     }));
   };
-  
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -214,9 +216,6 @@ export default function BusinessManager() {
     }
   };
 
-
-
-
   const searchBusinesses = async () => {
     try {
       const params = new URLSearchParams();
@@ -247,9 +246,9 @@ export default function BusinessManager() {
 
   useEffect(() => {
     if (keyword || stateFilter || industryFilter) {
-      searchBusinesses(); 
+      searchBusinesses();
     } else {
-      fetchBusinesses(); 
+      fetchBusinesses();
     }
   }, [keyword, stateFilter, industryFilter, page]);
 
@@ -274,17 +273,57 @@ export default function BusinessManager() {
 
 
 
-  const toggleFeatured = async (id: string, currentStatus: boolean) => {
+  const toggleFeatured = async (id: string, currentStatus: boolean, businessData: any) => {
     try {
-      const payload = { isFeatured: !currentStatus };
-      await axios.put(`${API_BASE_URL}/business/${id}`, payload, {
+      const payload = {
+        companyName: businessData.companyName,
+        title: businessData.title,
+        industry: businessData.industry,
+        state: businessData.state,
+        city: businessData.city,
+        about: businessData.about,
+        services: businessData.services || [],
+        industriesServed: businessData.industriesServed || [],
+        lookingFor: businessData.lookingFor,
+        phone: businessData.phone,
+        email: businessData.email,
+        website: businessData.website,
+        rating: businessData.rating || 0,
+        socialLinks: businessData.socialLinks || [],
+        // yaha isFeatured flip karo
+        isFeatured: !currentStatus,
+      };
+      await axios.patch(`${API_BASE_URL}/business/${id}`, payload, {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${AUTH_TOKEN}`,
         },
       });
       toast.success(`Business marked as ${!currentStatus ? "Featured" : "Not Featured"}`);
-      await fetchBusinesses(); // refresh list
+      // await fetchBusinesses(); 
+      if (showingFeatured) {
+        // agar featured list dekh rahe hain
+        if (currentStatus) {
+          // unfeatured kiya → remove from list
+          setBusinessList((prev) => prev.filter((b) => b._id !== id));
+        } else {
+          // featured kiya (rare case agar mixed list aa jaye)
+          setBusinessList((prev) =>
+            prev.map((b) => (b._id === id ? { ...b, isFeatured: true } : b))
+          );
+        }
+      } else {
+        // agar normal list dekh rahe hain
+        if (!currentStatus) {
+          // featured kiya → remove from list
+          setBusinessList((prev) => prev.filter((b) => b._id !== id));
+        } else {
+          // unfeatured kiya → update value
+          setBusinessList((prev) =>
+            prev.map((b) => (b._id === id ? { ...b, isFeatured: false } : b))
+          );
+        }
+      }
     } catch (error: any) {
       console.error("Error toggling featured:", error.response?.data || error.message);
       toast.error("Failed to update featured status");
@@ -294,7 +333,7 @@ export default function BusinessManager() {
 
   const handleLogoUpload = async (businessId: string, file: File) => {
     try {
-      // 1. Get presigned URL from backend
+
       const presignUrl = `${API_BASE_URL}/business/${businessId}/logo/upload-url?fileName=${encodeURIComponent(file.name)}&fileType=${encodeURIComponent(file.type)}`;
 
       const presignRes = await axios.get(presignUrl, {
@@ -303,12 +342,12 @@ export default function BusinessManager() {
 
       const { url, key } = presignRes.data;
 
-      // 2. Upload file to S3
+
       await axios.put(url, file, {
         headers: { "Content-Type": file.type },
       });
 
-      // 3. Update business record with fileKey
+
       await axios.patch(
         `${API_BASE_URL}/business/${businessId}/logo`,
         { fileKey: key },
@@ -328,6 +367,85 @@ export default function BusinessManager() {
     }
   };
 
+
+  const handleGalleryUpload = async (businessId: string, files: File[]) => {
+    if (!files || files.length === 0) {
+      toast.error("Please select at least one image");
+      return;
+    }
+
+    try {
+
+      const fileData = files.map((file) => ({
+        fileName: file.name,
+        fileType: file.type,
+      }));
+
+
+      const presignRes = await axios.post(
+        `${API_BASE_URL}/business/${businessId}/gallery/upload-urls`,
+        fileData,
+        {
+          headers: {
+            Authorization: `Bearer ${AUTH_TOKEN}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      const { urls } = presignRes.data;
+
+
+      await Promise.all(
+        urls.map((urlData: any, index: number) =>
+          axios.put(urlData.url, files[index], {
+            headers: { "Content-Type": files[index].type },
+          })
+        )
+      );
+
+
+      const fileKeys = urls.map((u: any) => u.key);
+      await axios.patch(
+        `${API_BASE_URL}/business/${businessId}/gallery`,
+        { fileKeys },
+        {
+          headers: {
+            Authorization: `Bearer ${AUTH_TOKEN}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      toast.success("Images uploaded to gallery!");
+      await fetchBusinesses();
+    } catch (err: any) {
+      console.error("Gallery upload error:", err);
+      toast.error(err.response?.data?.message || "Failed to upload gallery images");
+    }
+  };
+
+  const fetchNewMembers = async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/business/new-members`, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${AUTH_TOKEN}`,
+        },
+      });
+
+      console.log("New member businesses:", response.data);
+      setBusinessList(response.data || []);
+      setShowingNewMembers(true);
+      setShowingFeatured(false);
+    } catch (error: any) {
+      console.error("Error fetching new members:", error);
+      toast.error("Failed to fetch new member businesses");
+    }
+  };
+
+
+
   return (
     <div className="relative max-w-screen mx-auto p-6 ">
       <div>
@@ -335,7 +453,7 @@ export default function BusinessManager() {
 
         <div className="flex gap-2 justify-end">
           <Button
-          className="bg-[#ec2227] hover:bg-[#d41e23] text-white"
+            className="bg-[#ec2227] hover:bg-[#d41e23] text-white"
             onClick={() => {
               setBusiness(getEmptyBusiness()); // ✅ safe reset
               setIsModalOpen(true);
@@ -350,14 +468,36 @@ export default function BusinessManager() {
               if (showingFeatured) {
                 fetchBusinesses(); // reset to all
                 setShowingFeatured(false);
-              } else {
-                fetchFeaturedBusinesses(); // only featured
+              } else if (showingNewMembers) {
+                // agar new members list dekh rahe ho → featured/unfeatured karne pe bas update state
+                setBusinessList((prev) =>
+                  prev.map((b) => ({ ...b, isFeatured: !b.isFeatured }))
+                );
+              }
+              else {
+                fetchFeaturedBusinesses(); 
               }
             }}
             className="bg-blue-600 hover:bg-blue-700 text-white"
           >
             {showingFeatured ? "Show All" : "Show Featured"}
           </Button>
+
+          <Button
+            onClick={() => {
+              if (showingNewMembers) {
+                fetchBusinesses();
+                setShowingNewMembers(false);
+              } else {
+                fetchNewMembers();
+              }
+            }}
+            className="bg-green-600 hover:bg-green-700 text-white"
+          >
+            {showingNewMembers ? "Show All" : "Show New Members"}
+          </Button>
+
+
         </div>
       </div>
 
@@ -399,9 +539,14 @@ export default function BusinessManager() {
         {businessList.length > 0 ? (
           businessList.map((b) => (
 
-            <div key={b._id} className="bg-gray-50 p-4 rounded shadow flex justify-between items-start">
-              <div>
-                <div className="flex items-center gap-3">
+            <div
+              key={b._id}
+              className="bg-white rounded-2xl shadow-md p-5 grid grid-cols-12 gap-6"
+            >
+              {/* Left Side (Logo + Details + Gallery) */}
+              <div className="col-span-9 flex flex-col gap-4">
+                {/* Logo + Company Name */}
+                <div className="flex items-center gap-4">
                   {b.logo ? (
                     <img
                       src={b.logo}
@@ -409,29 +554,34 @@ export default function BusinessManager() {
                       className="w-16 h-16 object-cover rounded-full border-2 border-gray-300 shadow-sm"
                     />
                   ) : (
-                    <div className="w-16 h-16 flex items-center justify-center rounded-full border-2 border-dashed border-gray-400 bg-gray-100 text-gray-500 text-xs font-semibold shadow-sm">
+                    <div className="w-16 h-16 flex items-center justify-center rounded-full border-2 border-dashed border-gray-400 bg-gray-100 text-gray-500 text-xs font-semibold">
                       Upload Logo
                     </div>
                   )}
-
                   <div>
-                    <div className="font-bold text-lg">{b.companyName}</div>
-                    <div className="text-sm text-gray-600">by {b.title}</div>
-                    <div className="text-sm text-gray-600">{b.industry}</div>
-                    <div className="flex items-center">
-                      <span className="text-yellow-500">★</span>
-                      <span className="ml-1">{b.rating}</span>
-                      <span className="ml-2 text-gray-500">{b.state}</span>
-                    </div>
-                    <p className="mt-1">{b.city}</p>
-                    <p className="mt-1">{b.about}</p>
-                    <p className="mt-2 text-sm">
-                      <span className="font-bold">Featured: </span>
-                      {b.isFeatured ? "Yes" : "No"}
-                    </p>
+                    <h3 className="font-bold text-xl">{b.companyName}</h3>
+                    <p className="text-sm text-gray-600">by {b.title}</p>
+                    <p className="text-sm text-gray-600">{b.industry}</p>
+                  </div>
+                </div>
 
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      <p className="text-sm font-bold">Services</p>
+                {/* Details */}
+                <div>
+                  <div className="flex items-center text-sm text-gray-600 gap-2">
+                    <span className="text-yellow-500">★</span>
+                    <span>{b.rating}</span>
+                    <span className="ml-2">{b.state}</span>
+                  </div>
+                  <p className="mt-1 text-gray-700">{b.city}</p>
+                  <p className="mt-1 text-gray-800">{b.about}</p>
+                  <p className="mt-2 text-sm">
+                    <span className="font-bold">Featured:</span>{" "}
+                    {b.isFeatured ? "Yes" : "No"}
+                  </p>
+
+                  <div className="mt-2">
+                    <p className="text-sm font-bold">Services</p>
+                    <div className="flex flex-wrap gap-2 mt-1">
                       {Array.isArray(b.services) && b.services.length > 0 ? (
                         b.services.map((service: string) => (
                           <Tag color="blue" key={service}>
@@ -442,10 +592,11 @@ export default function BusinessManager() {
                         <span className="text-gray-400">No services listed</span>
                       )}
                     </div>
+                  </div>
 
-
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      <p className="text-sm font-bold">Industries Served</p>
+                  <div className="mt-2">
+                    <p className="text-sm font-bold">Industries Served</p>
+                    <div className="flex flex-wrap gap-2 mt-1">
                       {b.industriesServed?.length > 0 ? (
                         b.industriesServed.map((industry: string) => (
                           <Tag color="green" key={industry}>
@@ -459,34 +610,67 @@ export default function BusinessManager() {
                   </div>
                 </div>
 
-
-
+                {/* Gallery */}
+                {b.gallery && b.gallery.length > 0 && (
+                  <div className="mt-4 pt-2">
+                    <div className="flex gap-2 overflow-x-auto pb-2">
+                      {b.gallery.map((img: string, idx: number) => (
+                        <img
+                          key={idx}
+                          src={img}
+                          alt="gallery"
+                          className="w-24 h-24 object-cover rounded-md border"
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
-              <div className="flex items-center gap-2">
+
+              {/* Right Side (Buttons) */}
+              <div className="flex flex-col items-end gap-2 col-span-3">
+                {/* Upload Logo */}
                 <Upload
                   showUploadList={false}
                   beforeUpload={(file) => {
                     handleLogoUpload(b._id, file);
-                    return false; // prevent auto-upload
+                    return false;
                   }}
                 >
-                  <Button variant="outline" size="sm" className="text-blue-600">
-                    <UploadOutlined className="mr-1" /> Upload Logo
+                  <Button className="w-10 h-10 flex items-center justify-center rounded-full bg-blue-50 text-blue-600 hover:bg-blue-100 shadow-sm">
+                    <UploadOutlined />
                   </Button>
                 </Upload>
 
-
-                <Button
-                  onClick={() => toggleFeatured(b._id, b.isFeatured)}
-                  variant="outline"
-                  size="sm"
-                  className={b.isFeatured ? "text-green-600" : "text-gray-600"}
+                {/* Upload Gallery */}
+                <Upload
+                  multiple
+                  showUploadList={false}
+                  beforeUpload={(file, fileList) => {
+                    handleGalleryUpload(b._id, fileList as File[]);
+                    return false;
+                  }}
                 >
-                  {b.isFeatured ? "Unfeature" : "Mark Featured"}
+                  <Button className="w-10 h-10 flex items-center justify-center rounded-full bg-purple-50 text-purple-600 hover:bg-purple-100 shadow-sm">
+                    <Images className="w-5 h-5" />
+                  </Button>
+                </Upload>
+
+                {/* Mark Featured */}
+                <Button
+                  onClick={() => toggleFeatured(b._id, b.isFeatured, b)}
+                  className={`w-10 h-10 flex items-center justify-center rounded-full shadow-sm ${b.isFeatured
+                      ? "bg-green-50 text-green-600 hover:bg-green-100"
+                      : "bg-gray-50 text-gray-600 hover:bg-gray-100"
+                    }`}
+                >
+                  <Star className="w-5 h-5" />
                 </Button>
+
+                {/* Edit */}
                 <Button
                   onClick={() => {
-                    setSelectedBusiness(b);   // store selected business
+                    setSelectedBusiness(b);
                     setBusiness({
                       ...b,
                       name: b.companyName || "",
@@ -505,23 +689,21 @@ export default function BusinessManager() {
                     });
                     setIsEditModalOpen(true);
                   }}
-                  variant="outline"
-                  size="sm"
+                  className="w-10 h-10 flex items-center justify-center rounded-full bg-yellow-50 text-yellow-600 hover:bg-yellow-100 shadow-sm"
                 >
-                  <PencilIcon className="w-4 h-4" />
+                  <PencilIcon className="w-5 h-5" />
                 </Button>
 
+                {/* Delete */}
                 <Button
-                  onClick={() => handleDelete(b._id || b.id)} // backend id field ka naam confirm karein
-                  variant="outline"
-                  size="sm"
-                  className="text-red-600 hover:text-red-700"
+                  onClick={() => handleDelete(b._id || b.id)}
+                  className="w-10 h-10 flex items-center justify-center rounded-full bg-red-50 text-red-600 hover:bg-red-100 shadow-sm"
                 >
-                  <TrashIcon className="w-4 h-4" />
+                  <TrashIcon className="w-5 h-5" />
                 </Button>
-
               </div>
             </div>
+
           ))
         ) : (
           <p className="text-gray-500">No businesses found</p>
