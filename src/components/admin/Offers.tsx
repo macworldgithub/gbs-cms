@@ -738,12 +738,32 @@ function AddOfferModal({
               <option value="Partner">Partner</option>
             </select>
           </div>
-          <LabeledInput
-            label="Category"
-            name="category"
-            value={form.category}
-            onChange={update}
-          />
+          {/* ✅ Category Dropdown */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Category
+            </label>
+            <select
+              name="category"
+              value={form.category}
+              onChange={update}
+              className="w-full border rounded-lg px-3 py-2 bg-gray-50"
+            >
+              <option value="">Select Category</option>
+              <option value="Restaurant & Dining">Restaurant & Dining</option>
+              <option value="Professional Services">Professional Services</option>
+              <option value="Retail & Products">Retail & Products</option>
+              <option value="Health & Wellness">Health & Wellness</option>
+              <option value="Trade Services">Trade Services</option>
+              <option value="Energy Suppliers">Energy Suppliers</option>
+              <option value="Telecommunications">Telecommunications</option>
+              <option value="Automotive">Automotive</option>
+              <option value="Insurance">Insurance</option>
+              <option value="Travel & Accommodation">Travel & Accommodation</option>
+              <option value="Entertainment & Events">Entertainment & Events</option>
+              <option value="Technology & Software">Technology & Software</option>
+            </select>
+          </div>
         </div>
 
         {/* Buttons */}
@@ -763,7 +783,6 @@ function AddOfferModal({
     </div>
   );
 }
-
 
 /* ---------------- Update Offer Modal ---------------- */
 function UpdateOfferModal({
