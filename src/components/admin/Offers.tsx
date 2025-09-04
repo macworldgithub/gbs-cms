@@ -13,7 +13,9 @@ import {
   Trash2,
   Phone,
   Mail,
-  FileText
+  FileText,
+  ImagePlus,
+
 } from "lucide-react";
 
 type Offer = {
@@ -25,6 +27,8 @@ type Offer = {
   discount: string;
   expiryDate: string;
   locations: string;
+  image?: string;
+
 };
 
 export default function Offers() {
@@ -116,6 +120,60 @@ export default function Offers() {
     }
   };
 
+
+  // ✅ Upload Offer Image (corrected flow)
+  const handleImageUpload = async (id: string) => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/*";
+
+    input.onchange = async (e: any) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      try {
+        // Step 1: Get pre-signed S3 upload URL
+        const url = `${API_BASE_URL}/offer/${id}/image/upload-url?fileName=${encodeURIComponent(file.name)}&fileType=${encodeURIComponent(file.type)}`;
+        const res = await fetch(url, {
+          method: "GET",
+          headers: { accept: "application/json" },
+        });
+
+        if (!res.ok) throw new Error("Failed to get upload URL");
+
+        const { url: uploadUrl, key } = await res.json();
+
+        // Step 2: Upload file directly to S3
+        const uploadRes = await fetch(uploadUrl, {
+          method: "PUT",
+          headers: { "Content-Type": file.type },
+          body: file,
+        });
+
+        if (!uploadRes.ok) throw new Error("Failed to upload file to S3");
+
+        // Step 3: Tell backend the final fileKey
+        const patchRes = await fetch(`${API_BASE_URL}/offer/${id}/image`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json", accept: "application/json" },
+          body: JSON.stringify({ fileKey: key }), // 👈 yahan sirf key bhejna hai
+        });
+
+        if (!patchRes.ok) throw new Error("Failed to update offer image");
+
+        toast.success("Offer image uploaded successfully!");
+        fetchOffers();
+      } catch (err) {
+        console.error("Upload error:", err);
+        toast.error("Image upload failed!");
+      }
+    };
+
+    input.click();
+  };
+
+
+
   return (
     <div className="p-6 max-w-5xl mx-auto">
       {/* Header */}
@@ -190,6 +248,12 @@ export default function Offers() {
             <Card key={o._id} className="p-4 sm:p-5 rounded-2xl relative">
               <div className="absolute top-4 right-4 flex gap-2">
                 <button
+                  onClick={() => handleImageUpload(o._id)}
+                  className="p-2 rounded-lg hover:bg-gray-100"
+                >
+                  <ImagePlus className="w-5 h-5 text-green-600" />
+                </button>
+                <button
                   onClick={() => setEditOffer(o)}
                   className="p-2 rounded-lg hover:bg-gray-100"
                 >
@@ -202,6 +266,16 @@ export default function Offers() {
                   <Trash2 className="w-5 h-5 text-red-600" />
                 </button>
               </div>
+
+              {/* Offer image */}
+              {o.image && (
+                <img
+                  src={o.image}
+                  alt={o.title}
+                  className="w-20 h-20 object-cover rounded-xl mb-4"
+                />
+              )}
+
 
               <div className="flex gap-4">
                 <div className="shrink-0">
@@ -254,15 +328,15 @@ export default function Offers() {
                       <Button className="bg-[#ec2227] hover:bg-[#d41e23] text-white rounded-lg">
                         Redeem
                       </Button>
-                      </div>
-                    </div>
-
-                    <div className="mt-3 flex items-start gap-2 text-xs sm:text-sm text-gray-600 p-3">
-                      <LocateIcon className="w-4 h-4 shrink-0 text-gray-500" />
-                      <span className="leading-relaxed">{o.locations}</span>
                     </div>
                   </div>
+
+                  <div className="mt-3 flex items-start gap-2 text-xs sm:text-sm text-gray-600 p-3">
+                    <LocateIcon className="w-4 h-4 shrink-0 text-gray-500" />
+                    <span className="leading-relaxed">{o.locations}</span>
+                  </div>
                 </div>
+              </div>
             </Card>
           ))
         )}
@@ -285,13 +359,13 @@ export default function Offers() {
         />
       )}
 
-     {viewOfferId && (
-  <OfferDetailsModal
-    offerId={viewOfferId}
-    initialOffer={offers.find((o) => o._id === viewOfferId)} 
-    onClose={() => setViewOfferId(null)}
-  />
-)}
+      {viewOfferId && (
+        <OfferDetailsModal
+          offerId={viewOfferId}
+          initialOffer={offers.find((o) => o._id === viewOfferId)}
+          onClose={() => setViewOfferId(null)}
+        />
+      )}
     </div>
   );
 }
@@ -299,25 +373,35 @@ export default function Offers() {
 // OfferDetails
 type OfferDetails = {
   _id: string;
+  business: string | null;
+  image?: string;
   title: string;
   discount: string;
+  offerType: string;
+  category: string;
+  expiryDate: string;
   description: string;
   termsAndConditions: string[];
   howToRedeem: string;
   contactPhone: string;
   contactEmail: string;
   locations: string[];
-  expiryDate: string;
-  image?: string;
+  redemptionCount: number;
+  savedBy: string[];
+  reviews: any[];
+  createdAt: string;
+  updatedAt: string;
+  __v: number;
 };
+
 
 function OfferDetailsModal({
   offerId,
-  initialOffer,   
+  initialOffer,
   onClose,
 }: {
   offerId: string;
-  initialOffer?: Offer; 
+  initialOffer?: Offer;
   onClose: () => void;
 }) {
   const [offer, setOffer] = useState<OfferDetails | null>(null);
@@ -366,30 +450,41 @@ function OfferDetailsModal({
             <p className="text-red-500 font-semibold">{offer.discount}</p>
             <p className="text-gray-700">{offer.description}</p>
 
+            {/* Category & Offer Type */}
+            <p className="text-sm text-gray-600">
+              <strong>Category:</strong> {offer.category}
+            </p>
+            <p className="text-sm text-gray-600">
+              <strong>Type:</strong> {offer.offerType}
+            </p>
+
+            {/* Expiry */}
             <p className="flex items-center text-sm text-gray-600">
               <CalendarDays className="w-4 h-4 mr-1" />
               Expires: {new Date(offer.expiryDate).toLocaleDateString()}
             </p>
 
+            {/* Locations */}
             <p className="flex items-center text-sm text-gray-600">
               <LocateIcon className="w-4 h-4 mr-1" />
-              {Array.isArray(offer.locations)
-                ? offer.locations.join(", ")
-                : offer.locations}
+              {offer.locations.join(", ")}
             </p>
 
+            {/* Phone */}
             {offer.contactPhone && (
               <p className="flex items-center text-sm text-gray-600">
                 <Phone className="w-4 h-4 mr-1" /> {offer.contactPhone}
               </p>
             )}
 
+            {/* Email */}
             {offer.contactEmail && (
               <p className="flex items-center text-sm text-gray-600">
                 <Mail className="w-4 h-4 mr-1" /> {offer.contactEmail}
               </p>
             )}
 
+            {/* Terms */}
             {offer.termsAndConditions?.length > 0 && (
               <div>
                 <h4 className="font-semibold mt-2 flex items-center">
@@ -403,6 +498,7 @@ function OfferDetailsModal({
               </div>
             )}
 
+            {/* Redeem instructions */}
             {offer.howToRedeem && (
               <div>
                 <h4 className="font-semibold mt-2">How to Redeem</h4>
@@ -410,17 +506,28 @@ function OfferDetailsModal({
               </div>
             )}
 
-            {/* Close Button */}
-            <div className="flex justify-end">
-              <Button
-                onClick={onClose}
-                className="bg-[#ec2227] hover:bg-[#d41e23] text-white"
-              >
-                Close
-              </Button>
-            </div>
+            {/* Extra Info */}
+            <p className="text-sm text-gray-600">
+              <strong>Redemptions:</strong> {offer.redemptionCount}
+            </p>
+            <p className="text-sm text-gray-600">
+              <strong>Created At:</strong> {new Date(offer.createdAt).toLocaleString()}
+            </p>
+            <p className="text-sm text-gray-600">
+              <strong>Updated At:</strong> {new Date(offer.updatedAt).toLocaleString()}
+            </p>
           </div>
+
         )}
+        {/* Close Button */}
+        <div className="flex justify-end">
+          <Button
+            onClick={onClose}
+            className="bg-[#ec2227] hover:bg-[#d41e23] text-white"
+          >
+            Close
+          </Button>
+        </div>
       </div>
     </div>
   );
@@ -631,12 +738,32 @@ function AddOfferModal({
               <option value="Partner">Partner</option>
             </select>
           </div>
-          <LabeledInput
-            label="Category"
-            name="category"
-            value={form.category}
-            onChange={update}
-          />
+          {/* ✅ Category Dropdown */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Category
+            </label>
+            <select
+              name="category"
+              value={form.category}
+              onChange={update}
+              className="w-full border rounded-lg px-3 py-2 bg-gray-50"
+            >
+              <option value="">Select Category</option>
+              <option value="Restaurant & Dining">Restaurant & Dining</option>
+              <option value="Professional Services">Professional Services</option>
+              <option value="Retail & Products">Retail & Products</option>
+              <option value="Health & Wellness">Health & Wellness</option>
+              <option value="Trade Services">Trade Services</option>
+              <option value="Energy Suppliers">Energy Suppliers</option>
+              <option value="Telecommunications">Telecommunications</option>
+              <option value="Automotive">Automotive</option>
+              <option value="Insurance">Insurance</option>
+              <option value="Travel & Accommodation">Travel & Accommodation</option>
+              <option value="Entertainment & Events">Entertainment & Events</option>
+              <option value="Technology & Software">Technology & Software</option>
+            </select>
+          </div>
         </div>
 
         {/* Buttons */}
@@ -656,7 +783,6 @@ function AddOfferModal({
     </div>
   );
 }
-
 
 /* ---------------- Update Offer Modal ---------------- */
 function UpdateOfferModal({
