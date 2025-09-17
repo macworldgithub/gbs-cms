@@ -171,28 +171,34 @@ export const ChatManager: React.FC = () => {
   };
 
   return (
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">Chat Management</h2>
-        <div className="flex gap-2">
+    <div className="p-4 sm:p-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-6">
+        <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4 sm:mb-0">Chat Management</h2>
+        <div className="flex flex-wrap gap-2">
           <Button
             onClick={() => setActiveTab("all")}
             variant={activeTab === "all" ? "default" : "outline"}
-            className={activeTab === "all" ? "bg-[#ec2227] hover:bg-[#d41e23]" : ""}
+            className={`${
+              activeTab === "all" ? "bg-[#ec2227] hover:bg-[#d41e23]" : ""
+            } text-sm px-3 py-1 sm:px-4 sm:py-2`}
           >
             All Chats
           </Button>
           <Button
             onClick={() => setActiveTab("direct")}
             variant={activeTab === "direct" ? "default" : "outline"}
-            className={activeTab === "direct" ? "bg-[#ec2227] hover:bg-[#d41e23]" : ""}
+            className={`${
+              activeTab === "direct" ? "bg-[#ec2227] hover:bg-[#d41e23]" : ""
+            } text-sm px-3 py-1 sm:px-4 sm:py-2`}
           >
             Direct
           </Button>
           <Button
             onClick={() => setActiveTab("group")}
             variant={activeTab === "group" ? "default" : "outline"}
-            className={activeTab === "group" ? "bg-[#ec2227] hover:bg-[#d41e23]" : ""}
+            className={`${
+              activeTab === "group" ? "bg-[#ec2227] hover:bg-[#d41e23]" : ""
+            } text-sm px-3 py-1 sm:px-4 sm:py-2`}
           >
             Groups
           </Button>
@@ -206,85 +212,85 @@ export const ChatManager: React.FC = () => {
       )}
 
       {/* Chat Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-4 sm:mb-6">
         <Card className="p-4">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Total Chats</p>
-              <p className="text-2xl font-bold text-gray-900">{conversations.length}</p>
+              <p className="text-lg sm:text-2xl font-bold text-gray-900">{conversations.length}</p>
             </div>
-            <MessageSquareIcon className="w-8 h-8 text-[#ec2227]" />
+            <MessageSquareIcon className="w-6 h-6 sm:w-8 sm:h-8 text-[#ec2227]" />
           </div>
         </Card>
         <Card className="p-4">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Direct Chats</p>
-              <p className="text-2xl font-bold text-gray-900">{conversations.filter((c) => !c.isGroup).length}</p>
+              <p className="text-lg sm:text-2xl font-bold text-gray-900">{conversations.filter((c) => !c.isGroup).length}</p>
             </div>
-            <UsersIcon className="w-8 h-8 text-[#ec2227]" />
+            <UsersIcon className="w-6 h-6 sm:w-8 sm:h-8 text-[#ec2227]" />
           </div>
         </Card>
         <Card className="p-4">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Group Chats</p>
-              <p className="text-2xl font-bold text-gray-900">{conversations.filter((c) => c.isGroup).length}</p>
+              <p className="text-lg sm:text-2xl font-bold text-gray-900">{conversations.filter((c) => c.isGroup).length}</p>
             </div>
-            <UsersIcon className="w-8 h-8 text-[#ec2227]" />
+            <UsersIcon className="w-6 h-6 sm:w-8 sm:h-8 text-[#ec2227]" />
           </div>
         </Card>
       </div>
 
       {/* Main Layout */}
-      <div className="grid grid-cols-12 gap-6">
+      <div className="flex flex-col md:grid md:grid-cols-12 gap-4 sm:gap-6">
         {/* Conversations List */}
-        <div className="col-span-4">
+        <div className="md:col-span-4">
           <Card className="p-4">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Conversations</h3>
             <Input
               placeholder="Search by group name or participant"
               value={keyword}
               onChange={(e) => setKeyword(e.target.value)}
-              className="mb-4 border border-black rounded-md"
+              className="mb-4 border border-black rounded-md text-sm"
             />
             {loading ? (
               <div className="flex items-center justify-center p-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#ec2227]"></div>
+                <div className="animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-b-2 border-[#ec2227]"></div>
               </div>
             ) : (
               <>
                 {getDisplayChats().map((chat) => (
-                  <Card key={chat._id} className="p-4 mb-4">
+                  <Card key={chat._id} className="p-3 sm:p-4 mb-4">
                     <div className="flex items-center justify-between">
                       <div
-                        className="flex items-center gap-4 flex-1 cursor-pointer"
+                        className="flex items-center gap-3 sm:gap-4 flex-1 cursor-pointer"
                         onClick={() => handleConversationClick(chat)}
                       >
                         <div
-                          className="w-12 h-12 rounded-full flex items-center justify-center"
+                          className="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center"
                           style={{ backgroundColor: chat.theme?.primaryColor || "#ec2227" }}
                         >
                           {chat.isGroup ? (
-                            <UsersIcon className="w-6 h-6 text-white" />
+                            <UsersIcon className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                           ) : (
-                            <MessageSquareIcon className="w-6 h-6 text-white" />
+                            <MessageSquareIcon className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                           )}
                         </div>
                         <div className="flex-1">
                           <div className="flex items-center gap-2">
-                            <h3 className="font-semibold text-gray-900">
+                            <h3 className="font-semibold text-gray-900 text-sm sm:text-base">
                               {chat.isGroup
                                 ? chat.groupName || "Unnamed Group"
                                 : chat.participants?.length
                                   ? chat.participants.map((p) => p?.name || "Unknown").join(", ")
                                   : "No Participants"}
                             </h3>
-                            <Tag color={chat.isGroup ? "blue" : "green"}>
+                            <Tag color={chat.isGroup ? "blue" : "green"} className="text-xs">
                               {chat.isGroup ? "Group Chat" : "Direct Chat"}
                             </Tag>
                           </div>
-                          <p className="text-sm text-gray-600 mt-1">{formatLastMessage(chat)}</p>
+                          <p className="text-xs sm:text-sm text-gray-600 mt-1">{formatLastMessage(chat)}</p>
                           <div className="flex items-center gap-4 mt-2">
                             <span className="text-xs text-gray-500">
                               {chat.participants?.length || 0} participant{chat.participants?.length !== 1 ? "s" : ""}
@@ -296,7 +302,7 @@ export const ChatManager: React.FC = () => {
                   </Card>
                 ))}
                 {getDisplayChats().length === 0 && (
-                  <div className="text-center py-8 text-gray-500">
+                  <div className="text-center py-8 text-gray-500 text-sm sm:text-base">
                     No {activeTab === "all" ? "" : activeTab} chats found.
                   </div>
                 )}
@@ -305,14 +311,14 @@ export const ChatManager: React.FC = () => {
                   <Button
                     disabled={page === 1}
                     onClick={() => setPage((prev) => prev - 1)}
-                    className="bg-[#ec2227] hover:bg-[#d41e23] text-white"
+                    className="bg-[#ec2227] hover:bg-[#d41e23] text-white text-sm px-3 py-1 sm:px-4 sm:py-2"
                   >
                     Previous
                   </Button>
                   <Button
                     disabled={page * limit >= totalConversations}
                     onClick={() => setPage((prev) => prev + 1)}
-                    className="bg-[#ec2227] hover:bg-[#d41e23] text-white"
+                    className="bg-[#ec2227] hover:bg-[#d41e23] text-white text-sm px-3 py-1 sm:px-4 sm:py-2"
                   >
                     Next
                   </Button>
@@ -323,7 +329,7 @@ export const ChatManager: React.FC = () => {
         </div>
 
         {/* Messages Panel */}
-        <div className="col-span-8">
+        <div className="md:col-span-8">
           <Card className="p-4">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
               {selectedConversation
@@ -336,46 +342,46 @@ export const ChatManager: React.FC = () => {
               <>
                 {loading ? (
                   <div className="flex items-center justify-center p-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#ec2227]"></div>
+                    <div className="animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-b-2 border-[#ec2227]"></div>
                   </div>
                 ) : messages.length > 0 ? (
                   <div className="space-y-4">
                     {messages.map((msg) => (
                       <div
                         key={msg._id}
-                        className="p-3 bg-white rounded-lg shadow-sm flex justify-between items-start"
+                        className="p-3 bg-white rounded-lg shadow-sm flex flex-col sm:flex-row sm:justify-between items-start"
                         style={{ backgroundColor: selectedConversation.theme?.secondaryColor || "#f8f8f8" }}
                       >
-                        <div>
-                          <p className="font-semibold text-gray-900">
+                        <div className="w-full">
+                          <p className="font-semibold text-gray-900 text-sm sm:text-base">
                             {msg.sender?.name || "Unknown Sender"}
                           </p>
-                          <p className="text-gray-700">{msg.content || "No content"}</p>
+                          <p className="text-gray-700 text-sm sm:text-base">{msg.content || "No content"}</p>
                           {msg.media?.map((media, idx) => (
                             <div key={idx} className="mt-2">
                               {media.type === "image" && media.signedUrl && (
                                 <img
                                   src={media.signedUrl}
                                   alt="Media"
-                                  className="w-32 h-32 object-cover rounded-md"
+                                  className="w-24 h-24 sm:w-32 sm:h-32 object-cover rounded-md"
                                 />
                               )}
                               {media.type === "video" && media.signedUrl && (
                                 <video
                                   src={media.signedUrl}
                                   controls
-                                  className="w-32 h-32 object-cover rounded-md"
+                                  className="w-24 h-24 sm:w-32 sm:h-32 object-cover rounded-md"
                                 />
                               )}
                               {media.type === "audio" && media.signedUrl && (
-                                <audio src={media.signedUrl} controls className="w-32" />
+                                <audio src={media.signedUrl} controls className="w-24 sm:w-32" />
                               )}
                               {media.type === "file" && media.signedUrl && (
                                 <a
                                   href={media.signedUrl}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="text-blue-600 hover:underline"
+                                  className="text-blue-600 hover:underline text-sm"
                                 >
                                   View File
                                 </a>
@@ -396,7 +402,7 @@ export const ChatManager: React.FC = () => {
                             onClick={() => handleDeleteMessages(selectedConversation._id, [msg._id])}
                             variant="outline"
                             size="sm"
-                            className="text-red-600 hover:text-red-700"
+                            className="text-red-600 hover:text-red-700 mt-2 sm:mt-0"
                           >
                             <TrashIcon className="w-4 h-4" />
                           </Button>
@@ -405,28 +411,28 @@ export const ChatManager: React.FC = () => {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-gray-500">No messages found</p>
+                  <p className="text-gray-500 text-sm sm:text-base">No messages found</p>
                 )}
                 {/* Pagination for Messages */}
                 <div className="flex justify-between mt-4">
                   <Button
                     disabled={messagePage === 1}
                     onClick={() => setMessagePage((prev) => prev - 1)}
-                    className="bg-[#ec2227] hover:bg-[#d41e23] text-white"
+                    className="bg-[#ec2227] hover:bg-[#d41e23] text-white text-sm px-3 py-1 sm:px-4 sm:py-2"
                   >
                     Previous
                   </Button>
                   <Button
                     disabled={messagePage * limit >= totalMessages}
                     onClick={() => setMessagePage((prev) => prev + 1)}
-                    className="bg-[#ec2227] hover:bg-[#d41e23] text-white"
+                    className="bg-[#ec2227] hover:bg-[#d41e23] text-white text-sm px-3 py-1 sm:px-4 sm:py-2"
                   >
                     Next
                   </Button>
                 </div>
               </>
             ) : (
-              <p className="text-gray-500">Select a conversation to view messages</p>
+              <p className="text-gray-500 text-sm sm:text-base">Select a conversation to view messages</p>
             )}
           </Card>
         </div>
