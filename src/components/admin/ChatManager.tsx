@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect } from "react";
-import { TrashIcon, PaletteIcon, UsersIcon, MessageSquareIcon } from "lucide-react";
+import { TrashIcon, UsersIcon, MessageSquareIcon } from "lucide-react";
 import { Button } from "../ui/button";
 import { Card } from "../ui/card";
 import { Input, Tag } from "antd";
@@ -35,25 +34,12 @@ interface Conversation {
   theme: { id: string; name: string; primaryColor: string; secondaryColor: string; textColor: string };
 }
 
-interface ChatTheme {
-  id: string;
-  name: string;
-  primaryColor: string;
-  secondaryColor: string;
-  textColor: string;
-}
-
 export const ChatManager: React.FC = () => {
   const [activeTab, setActiveTab] = useState<"all" | "direct" | "group">("all");
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [showThemeSelector, setShowThemeSelector] = useState(false);
   const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [chatThemes] = useState<ChatTheme[]>([
-    { id: "1", name: "Default", primaryColor: "#ec2227", secondaryColor: "#f8f8f8", textColor: "#333" },
-    { id: "2", name: "Dark", primaryColor: "#1f2937", secondaryColor: "#374151", textColor: "#fff" },
-    { id: "3", name: "Blue", primaryColor: "#2563eb", secondaryColor: "#dbeafe", textColor: "#1e40af" },
-  ]);
+  const defaultTheme = { id: "1", name: "Default", primaryColor: "#ec2227", secondaryColor: "#f8f8f8", textColor: "#333" };
   const [page, setPage] = useState(1);
   const [messagePage, setMessagePage] = useState(1);
   const [limit] = useState(10);
@@ -82,9 +68,12 @@ export const ChatManager: React.FC = () => {
           },
         }
       );
+      console.log("Conversations API response:", response.data); // Debug log
       const conversationsData = response.data.conversations.map((conv: any) => ({
         ...conv,
-        theme: chatThemes[0], // Assign default theme (mock, adjust as needed)
+        theme: defaultTheme, // Assign default theme
+        participants: conv.participants || [], // Ensure participants is an array
+        messages: conv.messages || [], // Ensure messages is an array
       }));
       setConversations(conversationsData);
       setTotalConversations(response.data.total || 0);
@@ -111,7 +100,13 @@ export const ChatManager: React.FC = () => {
           },
         }
       );
-      setMessages(response.data.messages || []);
+      console.log("Messages API response:", response.data); // Debug log
+      const messagesData = (response.data.messages || []).map((msg: any) => ({
+        ...msg,
+        sender: msg.sender || { _id: "unknown", name: "Unknown Sender" }, // Fallback sender
+        readBy: msg.readBy || [], // Ensure readBy is an array
+      }));
+      setMessages(messagesData);
       setTotalMessages(response.data.total || 0);
     } catch (error: any) {
       console.error("Error fetching messages:", error);
@@ -141,50 +136,6 @@ export const ChatManager: React.FC = () => {
     }
   };
 
-  // Delete a chat
-  const handleDeleteChat = async (chatId: string) => {
-    if (!window.confirm("Are you sure you want to delete this chat?")) return;
-    try {
-      // Assuming a DELETE endpoint for conversations (not provided, so mock response)
-      await axios.delete(`${API_BASE_URL}/messages/admin/conversation/${chatId}`, {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${AUTH_TOKEN}`,
-        },
-      });
-      setConversations((prev) => prev.filter((conv) => conv._id !== chatId));
-      if (selectedConversation?._id === chatId) {
-        setSelectedConversation(null);
-        setMessages([]);
-      }
-      toast.success("Chat deleted successfully");
-    } catch (error: any) {
-      console.error("Failed to delete chat:", error);
-      setError("Failed to delete chat");
-      toast.error("Failed to delete chat");
-    }
-  };
-
-  // Update chat theme
-  const handleUpdateTheme = async (chatId: string, themeId: string) => {
-    try {
-      const theme = chatThemes.find((t) => t.id === themeId);
-      if (!theme) throw new Error("Theme not found");
-      setConversations((prev) =>
-        prev.map((conv) =>
-          conv._id === chatId ? { ...conv, theme } : conv
-        )
-      );
-      setShowThemeSelector(false);
-      setSelectedConversation(null);
-      toast.success("Chat theme updated successfully");
-    } catch (error: any) {
-      console.error("Failed to update chat theme:", error);
-      setError("Failed to update chat theme");
-      toast.error("Failed to update chat theme");
-    }
-  };
-
   // Handle conversation click
   const handleConversationClick = (conversation: Conversation) => {
     setSelectedConversation(conversation);
@@ -197,7 +148,7 @@ export const ChatManager: React.FC = () => {
   }, [page, keyword]);
 
   useEffect(() => {
-    if (selectedConversation) {
+    if (selectedConversation?._id) {
       fetchMessages(selectedConversation._id);
     }
   }, [messagePage, selectedConversation]);
@@ -214,9 +165,9 @@ export const ChatManager: React.FC = () => {
   };
 
   const formatLastMessage = (chat: Conversation) => {
-    if (!chat.messages.length) return "No messages yet";
+    if (!chat.messages || chat.messages.length === 0) return "No messages yet";
     const content = chat.messages[0].content;
-    return content.length > 50 ? `${content.substring(0, 50)}...` : content;
+    return content && content.length > 50 ? `${content.substring(0, 50)}...` : content || "No content";
   };
 
   return (
@@ -285,50 +236,6 @@ export const ChatManager: React.FC = () => {
         </Card>
       </div>
 
-      {/* Theme Selector Modal */}
-      {showThemeSelector && selectedConversation && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <Card className="p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-semibold mb-4">Select Chat Theme</h3>
-            <div className="grid grid-cols-2 gap-3 mb-4">
-              {chatThemes.map((theme) => (
-                <button
-                  key={theme.id}
-                  onClick={() => handleUpdateTheme(selectedConversation._id, theme.id)}
-                  className="p-3 rounded-lg border-2 hover:border-[#ec2227] transition-colors"
-                  style={{
-                    backgroundColor: theme.secondaryColor,
-                    borderColor: selectedConversation.theme.id === theme.id ? "#ec2227" : "#e5e7eb",
-                  }}
-                >
-                  <div className="text-center">
-                    <div
-                      className="w-8 h-8 rounded-full mx-auto mb-2"
-                      style={{ backgroundColor: theme.primaryColor }}
-                    ></div>
-                    <p className="text-sm font-medium" style={{ color: theme.textColor }}>
-                      {theme.name}
-                    </p>
-                  </div>
-                </button>
-              ))}
-            </div>
-            <div className="flex gap-2">
-              <Button
-                onClick={() => {
-                  setShowThemeSelector(false);
-                  setSelectedConversation(null);
-                }}
-                variant="outline"
-                className="flex-1"
-              >
-                Cancel
-              </Button>
-            </div>
-          </Card>
-        </div>
-      )}
-
       {/* Main Layout */}
       <div className="grid grid-cols-12 gap-6">
         {/* Conversations List */}
@@ -356,7 +263,7 @@ export const ChatManager: React.FC = () => {
                       >
                         <div
                           className="w-12 h-12 rounded-full flex items-center justify-center"
-                          style={{ backgroundColor: chat.theme.primaryColor }}
+                          style={{ backgroundColor: chat.theme?.primaryColor || "#ec2227" }}
                         >
                           {chat.isGroup ? (
                             <UsersIcon className="w-6 h-6 text-white" />
@@ -367,7 +274,11 @@ export const ChatManager: React.FC = () => {
                         <div className="flex-1">
                           <div className="flex items-center gap-2">
                             <h3 className="font-semibold text-gray-900">
-                              {chat.isGroup ? chat.groupName : chat.participants.map((p) => p.name).join(", ")}
+                              {chat.isGroup
+                                ? chat.groupName || "Unnamed Group"
+                                : chat.participants?.length
+                                  ? chat.participants.map((p) => p?.name || "Unknown").join(", ")
+                                  : "No Participants"}
                             </h3>
                             <Tag color={chat.isGroup ? "blue" : "green"}>
                               {chat.isGroup ? "Group Chat" : "Direct Chat"}
@@ -376,34 +287,10 @@ export const ChatManager: React.FC = () => {
                           <p className="text-sm text-gray-600 mt-1">{formatLastMessage(chat)}</p>
                           <div className="flex items-center gap-4 mt-2">
                             <span className="text-xs text-gray-500">
-                              {chat.participants.length} participant{chat.participants.length !== 1 ? "s" : ""}
+                              {chat.participants?.length || 0} participant{chat.participants?.length !== 1 ? "s" : ""}
                             </span>
-                            {/* <span className="text-xs text-gray-500">
-                              {chat.messages.length} message{chat.messages.length !== 1 ? "s" : ""}
-                            </span> */}
-                            <span className="text-xs text-gray-500">Theme: {chat.theme.name}</span>
                           </div>
                         </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          onClick={() => {
-                            setSelectedConversation(chat);
-                            setShowThemeSelector(true);
-                          }}
-                          variant="outline"
-                          size="sm"
-                        >
-                          <PaletteIcon className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          onClick={() => handleDeleteChat(chat._id)}
-                          variant="outline"
-                          size="sm"
-                          className="text-red-600 hover:text-red-700"
-                        >
-                          <TrashIcon className="w-4 h-4" />
-                        </Button>
                       </div>
                     </div>
                   </Card>
@@ -441,8 +328,8 @@ export const ChatManager: React.FC = () => {
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
               {selectedConversation
                 ? selectedConversation.isGroup
-                  ? selectedConversation.groupName
-                  : `Chat with ${selectedConversation.participants.map((p) => p.name).join(", ")}`
+                  ? selectedConversation.groupName || "Unnamed Group"
+                  : `Chat with ${selectedConversation.participants?.map((p) => p?.name || "Unknown").join(", ") || "No Participants"}`
                 : "Select a conversation"}
             </h3>
             {selectedConversation ? (
@@ -457,31 +344,33 @@ export const ChatManager: React.FC = () => {
                       <div
                         key={msg._id}
                         className="p-3 bg-white rounded-lg shadow-sm flex justify-between items-start"
-                        style={{ backgroundColor: selectedConversation.theme.secondaryColor }}
+                        style={{ backgroundColor: selectedConversation.theme?.secondaryColor || "#f8f8f8" }}
                       >
                         <div>
-                          <p className="font-semibold text-gray-900">{msg.sender.name}</p>
-                          <p className="text-gray-700">{msg.content}</p>
+                          <p className="font-semibold text-gray-900">
+                            {msg.sender?.name || "Unknown Sender"}
+                          </p>
+                          <p className="text-gray-700">{msg.content || "No content"}</p>
                           {msg.media?.map((media, idx) => (
                             <div key={idx} className="mt-2">
-                              {media.type === "image" && (
+                              {media.type === "image" && media.signedUrl && (
                                 <img
                                   src={media.signedUrl}
                                   alt="Media"
                                   className="w-32 h-32 object-cover rounded-md"
                                 />
                               )}
-                              {media.type === "video" && (
+                              {media.type === "video" && media.signedUrl && (
                                 <video
                                   src={media.signedUrl}
                                   controls
                                   className="w-32 h-32 object-cover rounded-md"
                                 />
                               )}
-                              {media.type === "audio" && (
+                              {media.type === "audio" && media.signedUrl && (
                                 <audio src={media.signedUrl} controls className="w-32" />
                               )}
-                              {media.type === "file" && (
+                              {media.type === "file" && media.signedUrl && (
                                 <a
                                   href={media.signedUrl}
                                   target="_blank"
@@ -494,11 +383,11 @@ export const ChatManager: React.FC = () => {
                             </div>
                           ))}
                           <p className="text-xs text-gray-400">
-                            {new Date(msg.createdAt).toLocaleString()}
+                            {msg.createdAt ? new Date(msg.createdAt).toLocaleString() : "Unknown Date"}
                           </p>
                           {selectedConversation.isGroup && (
                             <p className="text-xs text-gray-400">
-                              Read by: {msg.readBy.map((user) => user.name).join(", ") || "None"}
+                              Read by: {msg.readBy?.map((user) => user?.name || "Unknown").join(", ") || "None"}
                             </p>
                           )}
                         </div>
