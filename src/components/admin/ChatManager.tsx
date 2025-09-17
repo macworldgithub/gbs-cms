@@ -378,9 +378,9 @@ export const ChatManager: React.FC = () => {
                             <span className="text-xs text-gray-500">
                               {chat.participants.length} participant{chat.participants.length !== 1 ? "s" : ""}
                             </span>
-                            <span className="text-xs text-gray-500">
+                            {/* <span className="text-xs text-gray-500">
                               {chat.messages.length} message{chat.messages.length !== 1 ? "s" : ""}
-                            </span>
+                            </span> */}
                             <span className="text-xs text-gray-500">Theme: {chat.theme.name}</span>
                           </div>
                         </div>
