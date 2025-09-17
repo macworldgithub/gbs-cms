@@ -45,7 +45,7 @@ export const AdminDashboard: React.FC = () => {
     { id: "overview", label: "Overview", icon: BarChart3Icon },
     { id: "users", label: "Users", icon: UsersIcon },
     // { id: "events", label: "Events", icon: CalendarIcon },
-    // { id: "chats", label: "Chats", icon: MessageSquareIcon },
+    { id: "chats", label: "Chats", icon: MessageSquareIcon },
     { id: "roles", label: "Roles", icon: ShieldIcon },
     { id: "permissions", label: "Permissions", icon: ShieldCheckIcon },
     // { id: "languages", label: "Languages", icon: LanguagesIcon },
