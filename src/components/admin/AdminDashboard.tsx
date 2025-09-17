@@ -44,13 +44,13 @@ export const AdminDashboard: React.FC = () => {
   const menuItems = [
     { id: "overview", label: "Overview", icon: BarChart3Icon },
     { id: "users", label: "Users", icon: UsersIcon },
-    // { id: "events", label: "Events", icon: CalendarIcon },
+    { id: "events", label: "Events", icon: CalendarIcon },
     // { id: "chats", label: "Chats", icon: MessageSquareIcon },
     { id: "roles", label: "Roles", icon: ShieldIcon },
     { id: "permissions", label: "Permissions", icon: ShieldCheckIcon },
     // { id: "languages", label: "Languages", icon: LanguagesIcon },
     { id: "business", label: "Business", icon: BarChart3Icon },
-        { id: "offers", label: "Offers", icon: Gift },
+    { id: "offers", label: "Offers", icon: Gift },
     // { id: "settings", label: "Settings", icon: SettingsIcon },
     { id: "notification", label: "Notification", icon: Bell },
   ];
@@ -154,7 +154,7 @@ const AdminOverview: React.FC = () => {
       <h2 className="text-2xl font-bold text-gray-900 mb-6">
         Dashboard Overview
       </h2>
-       {loading ? (
+      {loading ? (
         <p>Loading stats...</p>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">

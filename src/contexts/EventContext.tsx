@@ -1,13 +1,14 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Event, EventContextType } from '../types';
-import { eventService } from '../services/eventService';
+import React, { createContext, useContext, useState, useEffect } from "react";
+import { Event, EventContextType } from "../types";
+import { eventService } from "../services/eventService";
+import { AUTH_TOKEN } from "../utils/config/server";
 
 const EventContext = createContext<EventContextType | undefined>(undefined);
 
 export const useEvent = () => {
   const context = useContext(EventContext);
   if (!context) {
-    throw new Error('useEvent must be used within an EventProvider');
+    throw new Error("useEvent must be used within an EventProvider");
   }
   return context;
 };
@@ -24,11 +25,13 @@ export const EventProvider: React.FC<EventProviderProps> = ({ children }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const token = localStorage.getItem("token") || "";
+
   const fetchEvents = async () => {
     try {
       setLoading(true);
       setError(null);
-      
+
       const [allEvents, popular, upcoming, live] = await Promise.all([
         eventService.getAllEvents(),
         eventService.getPopularEvents(),
@@ -41,59 +44,122 @@ export const EventProvider: React.FC<EventProviderProps> = ({ children }) => {
       setUpcomingEvents(upcoming);
       setLiveEvents(live);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch events');
+      setError(err instanceof Error ? err.message : "Failed to fetch events");
     } finally {
       setLoading(false);
     }
   };
 
-  const searchEvents = async (query: string, location?: string): Promise<Event[]> => {
+  const searchEvents = async (
+    query: string,
+    location?: string
+  ): Promise<Event[]> => {
     try {
       setError(null);
       return await eventService.searchEvents(query, location);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to search events');
+      setError(err instanceof Error ? err.message : "Failed to search events");
       return [];
     }
   };
 
-  const addEvent = async (eventData: Omit<Event, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const addEvent = async (
+    eventData: Omit<Event, "id" | "createdAt" | "updatedAt">
+  ) => {
     try {
       setLoading(true);
       setError(null);
       const newEvent = await eventService.createEvent(eventData);
-      setEvents(prev => [...prev, newEvent]);
-      
+      setEvents((prev) => [...prev, newEvent]);
+
       // Update filtered lists
       if (newEvent.isPopular) {
-        setPopularEvents(prev => [...prev, newEvent]);
+        setPopularEvents((prev) => [...prev, newEvent]);
       }
-      if (newEvent.status === 'upcoming') {
-        setUpcomingEvents(prev => [...prev, newEvent]);
+      if (newEvent.status === "upcoming") {
+        setUpcomingEvents((prev) => [...prev, newEvent]);
       }
-      if (newEvent.status === 'live') {
-        setLiveEvents(prev => [...prev, newEvent]);
+      if (newEvent.status === "live") {
+        setLiveEvents((prev) => [...prev, newEvent]);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to add event');
+      setError(err instanceof Error ? err.message : "Failed to add event");
       throw err;
     } finally {
       setLoading(false);
     }
   };
 
+  // const addEvent = async (
+  //   eventData: Omit<Event, "id" | "createdAt" | "updatedAt">
+  // ) => {
+  //   try {
+  //     setLoading(true);
+  //     setError(null);
+
+  //     const response = await fetch(
+  //       "https://gbs.westsidecarcare.com.au/events",
+  //       {
+  //         method: "POST",
+  //         headers: {
+  //           Accept: "application/json",
+  //           "Content-Type": "application/json",
+  //           Authorization: `Bearer ${token}`,
+  //         },
+  //         body: JSON.stringify(eventData),
+  //       }
+  //     );
+
+  //     if (!response.ok) {
+  //       throw new Error("Failed to create event");
+  //     }
+
+  //     const newEvent = await response.json();
+
+  //     setEvents((prev) => [...prev, newEvent]);
+
+  //     // Update filtered lists
+  //     if (newEvent.isPopular) {
+  //       setPopularEvents((prev) => [...prev, newEvent]);
+  //     }
+  //     if (newEvent.status === "upcoming") {
+  //       setUpcomingEvents((prev) => [...prev, newEvent]);
+  //     }
+  //     if (newEvent.status === "live") {
+  //       setLiveEvents((prev) => [...prev, newEvent]);
+  //     }
+  //   } catch (err) {
+  //     setError(err instanceof Error ? err.message : "Failed to add event");
+  //     throw err;
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
   const updateEvent = async (id: string, eventData: Partial<Event>) => {
     try {
       setLoading(true);
       setError(null);
-      const updatedEvent = await eventService.updateEvent(id, eventData);
-      
-      setEvents(prev => prev.map(event => event.id === id ? updatedEvent : event));
-      setPopularEvents(prev => prev.map(event => event.id === id ? updatedEvent : event));
-      setUpcomingEvents(prev => prev.map(event => event.id === id ? updatedEvent : event));
-      setLiveEvents(prev => prev.map(event => event.id === id ? updatedEvent : event));
+      const updatedEvent = await eventService.updateEvent(
+        id,
+        eventData,
+        AUTH_TOKEN
+      );
+
+      setEvents((prev) =>
+        prev.map((event) => (event.id === id ? updatedEvent : event))
+      );
+      setPopularEvents((prev) =>
+        prev.map((event) => (event.id === id ? updatedEvent : event))
+      );
+      setUpcomingEvents((prev) =>
+        prev.map((event) => (event.id === id ? updatedEvent : event))
+      );
+      setLiveEvents((prev) =>
+        prev.map((event) => (event.id === id ? updatedEvent : event))
+      );
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update event');
+      setError(err instanceof Error ? err.message : "Failed to update event");
       throw err;
     } finally {
       setLoading(false);
@@ -104,14 +170,14 @@ export const EventProvider: React.FC<EventProviderProps> = ({ children }) => {
     try {
       setLoading(true);
       setError(null);
-      await eventService.deleteEvent(id);
-      
-      setEvents(prev => prev.filter(event => event.id !== id));
-      setPopularEvents(prev => prev.filter(event => event.id !== id));
-      setUpcomingEvents(prev => prev.filter(event => event.id !== id));
-      setLiveEvents(prev => prev.filter(event => event.id !== id));
+      await eventService.deleteEvent(id, AUTH_TOKEN);
+
+      setEvents((prev) => prev.filter((event) => event.id !== id));
+      setPopularEvents((prev) => prev.filter((event) => event.id !== id));
+      setUpcomingEvents((prev) => prev.filter((event) => event.id !== id));
+      setLiveEvents((prev) => prev.filter((event) => event.id !== id));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete event');
+      setError(err instanceof Error ? err.message : "Failed to delete event");
       throw err;
     } finally {
       setLoading(false);
@@ -137,8 +203,6 @@ export const EventProvider: React.FC<EventProviderProps> = ({ children }) => {
   };
 
   return (
-    <EventContext.Provider value={value}>
-      {children}
-    </EventContext.Provider>
+    <EventContext.Provider value={value}>{children}</EventContext.Provider>
   );
 };

@@ -1,35 +1,51 @@
-import React, { useState } from 'react';
-import { PlusIcon, PencilIcon, TrashIcon, SaveIcon, XIcon, SearchIcon, MapPinIcon } from 'lucide-react';
-import { useEvent } from '../../contexts/EventContext';
-import { Event, EventCategory, EventStatus } from '../../types';
-import { Button } from '../ui/button';
-import { Card } from '../ui/card';
+import React, { useState } from "react";
+import {
+  PlusIcon,
+  PencilIcon,
+  TrashIcon,
+  SaveIcon,
+  XIcon,
+  SearchIcon,
+  MapPinIcon,
+} from "lucide-react";
+import { useEvent } from "../../contexts/EventContext";
+import { Event, EventCategory, EventStatus } from "../../types";
+import { Button } from "../ui/button";
+import { Card } from "../ui/card";
 
 export const EventManager: React.FC = () => {
-  const { events, loading, error, addEvent, updateEvent, deleteEvent, searchEvents } = useEvent();
+  const {
+    events,
+    loading,
+    error,
+    addEvent,
+    updateEvent,
+    deleteEvent,
+    searchEvents,
+  } = useEvent();
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [locationFilter, setLocationFilter] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
+  const [locationFilter, setLocationFilter] = useState("");
   const [filteredEvents, setFilteredEvents] = useState<Event[]>([]);
   const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    image: '',
-    category: 'other' as EventCategory,
-    status: 'upcoming' as EventStatus,
-    startDate: '',
-    endDate: '',
+    title: "",
+    description: "",
+    image: "",
+    category: "other" as EventCategory,
+    status: "upcoming" as EventStatus,
+    startDate: "",
+    endDate: "",
     location: {
-      name: '',
-      address: '',
-      city: '',
-      country: '',
-      coordinates: { lat: 0, lng: 0 }
+      name: "",
+      address: "",
+      city: "",
+      country: "",
+      coordinates: { lat: 0, lng: 0 },
     },
-    maxAttendees: '',
-    price: '',
-    tags: '',
+    maxAttendees: "",
+    price: "",
+    tags: "",
     isPopular: false,
   });
 
@@ -39,23 +55,23 @@ export const EventManager: React.FC = () => {
 
   const resetForm = () => {
     setFormData({
-      title: '',
-      description: '',
-      image: '',
-      category: 'other',
-      status: 'upcoming',
-      startDate: '',
-      endDate: '',
+      title: "",
+      description: "",
+      image: "",
+      category: "other",
+      status: "upcoming",
+      startDate: "",
+      endDate: "",
       location: {
-        name: '',
-        address: '',
-        city: '',
-        country: '',
-        coordinates: { lat: 0, lng: 0 }
+        name: "",
+        address: "",
+        city: "",
+        country: "",
+        coordinates: { lat: 0, lng: 0 },
       },
-      maxAttendees: '',
-      price: '',
-      tags: '',
+      maxAttendees: "",
+      price: "",
+      tags: "",
       isPopular: false,
     });
     setIsAdding(false);
@@ -69,23 +85,27 @@ export const EventManager: React.FC = () => {
         ...formData,
         startDate: new Date(formData.startDate),
         endDate: new Date(formData.endDate),
-        maxAttendees: formData.maxAttendees ? parseInt(formData.maxAttendees) : undefined,
+        maxAttendees: formData.maxAttendees
+          ? parseInt(formData.maxAttendees)
+          : undefined,
         price: formData.price ? parseFloat(formData.price) : undefined,
-        tags: formData.tags.split(',').map(tag => tag.trim()).filter(Boolean),
-        organizer: { id: '1' } as any, // Mock organizer
+        tags: formData.tags
+          .split(",")
+          .map((tag) => tag.trim())
+          .filter(Boolean),
+        organizer: { id: "1" } as any, // Mock organizer
         attendees: [],
-        isLive: formData.status === 'live',
+        isLive: formData.status === "live",
       };
 
       if (editingId) {
-      
         await updateEvent(editingId, eventData);
       } else {
         await addEvent(eventData);
       }
       resetForm();
     } catch (err) {
-      console.error('Failed to save event:', err);
+      console.error("Failed to save event:", err);
     }
   };
 
@@ -99,9 +119,9 @@ export const EventManager: React.FC = () => {
       startDate: event.startDate.toISOString().slice(0, 16),
       endDate: event.endDate.toISOString().slice(0, 16),
       location: event.location,
-      maxAttendees: event.maxAttendees?.toString() || '',
-      price: event.price?.toString() || '',
-      tags: event.tags.join(', '),
+      maxAttendees: event.maxAttendees?.toString() || "",
+      price: event.price?.toString() || "",
+      tags: event.tags.join(", "),
       isPopular: event.isPopular,
     });
     setEditingId(event.id);
@@ -109,11 +129,11 @@ export const EventManager: React.FC = () => {
   };
 
   const handleDelete = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this event?')) {
+    if (window.confirm("Are you sure you want to delete this event?")) {
       try {
         await deleteEvent(id);
       } catch (err) {
-        console.error('Failed to delete event:', err);
+        console.error("Failed to delete event:", err);
       }
     }
   };
@@ -123,12 +143,12 @@ export const EventManager: React.FC = () => {
       setFilteredEvents(events);
       return;
     }
-    
+
     try {
       const searchResults = await searchEvents(searchQuery, locationFilter);
       setFilteredEvents(searchResults);
     } catch (err) {
-      console.error('Failed to search events:', err);
+      console.error("Failed to search events:", err);
     }
   };
 
@@ -179,7 +199,7 @@ export const EventManager: React.FC = () => {
       {isAdding && (
         <Card className="p-6 mb-6 border-2 border-[#ec2227]">
           <h3 className="text-lg font-semibold mb-4">
-            {editingId ? 'Edit Event' : 'Add New Event'}
+            {editingId ? "Edit Event" : "Add New Event"}
           </h3>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -190,7 +210,9 @@ export const EventManager: React.FC = () => {
                 <input
                   type="text"
                   value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, title: e.target.value })
+                  }
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ec2227]"
                   required
                 />
@@ -201,7 +223,12 @@ export const EventManager: React.FC = () => {
                 </label>
                 <select
                   value={formData.category}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value as EventCategory })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      category: e.target.value as EventCategory,
+                    })
+                  }
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ec2227]"
                 >
                   <option value="music">Music</option>
@@ -219,7 +246,12 @@ export const EventManager: React.FC = () => {
                 </label>
                 <select
                   value={formData.status}
-                  onChange={(e) => setFormData({ ...formData, status: e.target.value as EventStatus })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      status: e.target.value as EventStatus,
+                    })
+                  }
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ec2227]"
                 >
                   <option value="upcoming">Upcoming</option>
@@ -235,7 +267,9 @@ export const EventManager: React.FC = () => {
                 <input
                   type="url"
                   value={formData.image}
-                  onChange={(e) => setFormData({ ...formData, image: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, image: e.target.value })
+                  }
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ec2227]"
                 />
               </div>
@@ -246,7 +280,9 @@ export const EventManager: React.FC = () => {
                 <input
                   type="datetime-local"
                   value={formData.startDate}
-                  onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, startDate: e.target.value })
+                  }
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ec2227]"
                   required
                 />
@@ -258,7 +294,9 @@ export const EventManager: React.FC = () => {
                 <input
                   type="datetime-local"
                   value={formData.endDate}
-                  onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, endDate: e.target.value })
+                  }
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ec2227]"
                   required
                 />
@@ -270,7 +308,9 @@ export const EventManager: React.FC = () => {
                 <input
                   type="number"
                   value={formData.maxAttendees}
-                  onChange={(e) => setFormData({ ...formData, maxAttendees: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, maxAttendees: e.target.value })
+                  }
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ec2227]"
                 />
               </div>
@@ -282,12 +322,14 @@ export const EventManager: React.FC = () => {
                   type="number"
                   step="0.01"
                   value={formData.price}
-                  onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, price: e.target.value })
+                  }
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ec2227]"
                 />
               </div>
             </div>
-            
+
             {/* Location Fields */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -297,10 +339,12 @@ export const EventManager: React.FC = () => {
                 <input
                   type="text"
                   value={formData.location.name}
-                  onChange={(e) => setFormData({ 
-                    ...formData, 
-                    location: { ...formData.location, name: e.target.value }
-                  })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      location: { ...formData.location, name: e.target.value },
+                    })
+                  }
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ec2227]"
                 />
               </div>
@@ -311,10 +355,15 @@ export const EventManager: React.FC = () => {
                 <input
                   type="text"
                   value={formData.location.address}
-                  onChange={(e) => setFormData({ 
-                    ...formData, 
-                    location: { ...formData.location, address: e.target.value }
-                  })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      location: {
+                        ...formData.location,
+                        address: e.target.value,
+                      },
+                    })
+                  }
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ec2227]"
                 />
               </div>
@@ -325,10 +374,12 @@ export const EventManager: React.FC = () => {
                 <input
                   type="text"
                   value={formData.location.city}
-                  onChange={(e) => setFormData({ 
-                    ...formData, 
-                    location: { ...formData.location, city: e.target.value }
-                  })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      location: { ...formData.location, city: e.target.value },
+                    })
+                  }
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ec2227]"
                 />
               </div>
@@ -339,10 +390,15 @@ export const EventManager: React.FC = () => {
                 <input
                   type="text"
                   value={formData.location.country}
-                  onChange={(e) => setFormData({ 
-                    ...formData, 
-                    location: { ...formData.location, country: e.target.value }
-                  })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      location: {
+                        ...formData.location,
+                        country: e.target.value,
+                      },
+                    })
+                  }
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ec2227]"
                 />
               </div>
@@ -354,13 +410,15 @@ export const EventManager: React.FC = () => {
               </label>
               <textarea
                 value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, description: e.target.value })
+                }
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ec2227]"
                 rows={3}
                 required
               />
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Tags (comma separated)
@@ -368,7 +426,9 @@ export const EventManager: React.FC = () => {
               <input
                 type="text"
                 value={formData.tags}
-                onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, tags: e.target.value })
+                }
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ec2227]"
                 placeholder="music, festival, outdoor"
               />
@@ -379,10 +439,15 @@ export const EventManager: React.FC = () => {
                 type="checkbox"
                 id="isPopular"
                 checked={formData.isPopular}
-                onChange={(e) => setFormData({ ...formData, isPopular: e.target.checked })}
+                onChange={(e) =>
+                  setFormData({ ...formData, isPopular: e.target.checked })
+                }
                 className="mr-2"
               />
-              <label htmlFor="isPopular" className="text-sm font-medium text-gray-700">
+              <label
+                htmlFor="isPopular"
+                className="text-sm font-medium text-gray-700"
+              >
                 Mark as Popular Event
               </label>
             </div>
@@ -394,7 +459,7 @@ export const EventManager: React.FC = () => {
                 disabled={loading}
               >
                 <SaveIcon className="w-4 h-4 mr-2" />
-                {editingId ? 'Update' : 'Save'}
+                {editingId ? "Update" : "Save"}
               </Button>
               <Button type="button" onClick={resetForm} variant="outline">
                 <XIcon className="w-4 h-4 mr-2" />
@@ -421,14 +486,19 @@ export const EventManager: React.FC = () => {
                     alt={event.title}
                     className="w-20 h-20 rounded-lg object-cover"
                     onError={(e) => {
-                      (e.target as HTMLImageElement).src = 'https://images.pexels.com/photos/2774556/pexels-photo-2774556.jpeg?auto=compress&cs=tinysrgb&w=400';
+                      (e.target as HTMLImageElement).src =
+                        "https://images.pexels.com/photos/2774556/pexels-photo-2774556.jpeg?auto=compress&cs=tinysrgb&w=400";
                     }}
                   />
                   <div className="flex-1">
                     <div className="flex items-start justify-between">
                       <div>
-                        <h3 className="font-semibold text-gray-900">{event.title}</h3>
-                        <p className="text-sm text-gray-600 mt-1">{event.description}</p>
+                        <h3 className="font-semibold text-gray-900">
+                          {event.title}
+                        </h3>
+                        <p className="text-sm text-gray-600 mt-1">
+                          {event.description}
+                        </p>
                         <div className="flex items-center gap-2 mt-2">
                           <MapPinIcon className="w-4 h-4 text-gray-400" />
                           <span className="text-sm text-gray-500">
@@ -436,12 +506,17 @@ export const EventManager: React.FC = () => {
                           </span>
                         </div>
                         <div className="flex items-center gap-4 mt-2">
-                          <span className={`px-2 py-1 text-xs rounded-full ${
-                            event.status === 'live' ? 'bg-red-100 text-red-800' :
-                            event.status === 'upcoming' ? 'bg-blue-100 text-blue-800' :
-                            event.status === 'completed' ? 'bg-green-100 text-green-800' :
-                            'bg-gray-100 text-gray-800'
-                          }`}>
+                          <span
+                            className={`px-2 py-1 text-xs rounded-full ${
+                              event.status === "live"
+                                ? "bg-red-100 text-red-800"
+                                : event.status === "upcoming"
+                                ? "bg-blue-100 text-blue-800"
+                                : event.status === "completed"
+                                ? "bg-green-100 text-green-800"
+                                : "bg-gray-100 text-gray-800"
+                            }`}
+                          >
                             {event.status}
                           </span>
                           <span className="text-xs text-gray-500 capitalize">
