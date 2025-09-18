@@ -8,7 +8,7 @@
 // import { RoleProvider } from "./contexts/RoleContext";
 // import { PermissionProvider } from "./contexts/PermissionContext";
 // import { AuthProvider } from "./contexts/AuthContext";
-// import App from "./App";  
+// import App from "./App";
 // import { ToastContainer } from "react-toastify";
 // import "react-toastify/dist/ReactToastify.css";
 // import "../index.css";
@@ -36,7 +36,6 @@
 //   </StrictMode>
 // );
 
-
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { AdminDashboard } from "./components/admin/AdminDashboard";
@@ -57,7 +56,7 @@ createRoot(document.getElementById("app") as HTMLElement).render(
           <ChatProvider>
             <RoleProvider>
               <PermissionProvider>
-                 <>
+                <>
                   <AdminDashboard />
                   <ToastContainer
                     position="top-right"
