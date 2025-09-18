@@ -406,150 +406,531 @@
 
 // export const eventService = new EventService();
 
-import { Event } from "../types";
+// import { Event } from "../types";
+
+// const API_BASE_URL = "https://gbs.westsidecarcare.com.au";
+
+// class EventService {
+//   // 🔹 Get All Events
+//   async getAllEvents(
+//     state?: string,
+//     page?: number,
+//     limit?: number
+//   ): Promise<Event[]> {
+//     const params = new URLSearchParams();
+//     if (state) params.append("state", state);
+//     if (page) params.append("page", page.toString());
+//     if (limit) params.append("limit", limit.toString());
+
+//     const response = await fetch(`${API_BASE_URL}/events?${params.toString()}`);
+//     const data = await response.json();
+
+//     return data.map((e: any) => ({
+//       id: e._id,
+//       title: e.title,
+//       description: e.description,
+//       image: e.imageUrl || "",
+//       category: e.category || "",
+//       status: "",
+//       startDate: new Date(e.startDate),
+//       endDate: new Date(e.endDate),
+//       location: {
+//         id: "",
+//         name: e.locationNames?.[0] || "",
+//         address: "",
+//         city: e.locationNames?.[0]?.split(",")[0] || "",
+//         country: e.locationNames?.[0]?.split(",")[1]?.trim() || "",
+//         coordinates: {
+//           lat: e.area?.coordinates?.[0]?.[0]?.[0]?.[0] || 0,
+//           lng: e.area?.coordinates?.[0]?.[0]?.[0]?.[1] || 0,
+//         },
+//       },
+//       organizer: e.creator
+//         ? {
+//             id: e.creator._id,
+//             name: e.creator.name,
+//             avatar: e.creator.avatarUrl,
+//           }
+//         : {},
+//       attendees: e.attendees || [],
+//       maxAttendees: 0,
+//       price: 0,
+//       tags: [],
+//       isPopular: e.isFeatured || false,
+//       isLive: false,
+//       createdAt: new Date(e.createdAt),
+//       updatedAt: new Date(e.updatedAt),
+//     }));
+//   }
+
+//   // 🔹 Popular Events
+//   async getPopularEvents(): Promise<Event[]> {
+//     const events = await this.getAllEvents();
+//     return events.filter((event) => event.isPopular);
+//   }
+
+//   // 🔹 Upcoming Events
+//   async getUpcomingEvents(): Promise<Event[]> {
+//     const events = await this.getAllEvents();
+//     const now = new Date();
+//     return events.filter((event) => event.startDate > now);
+//   }
+
+//   // 🔹 Live Events
+//   async getLiveEvents(): Promise<Event[]> {
+//     const events = await this.getAllEvents();
+//     return events.filter((event) => event.isLive);
+//   }
+
+//   // 🔹 Search Events
+//   async searchEvents(query: string, location?: string): Promise<Event[]> {
+//     const events = await this.getAllEvents();
+//     const lowercaseQuery = query.toLowerCase();
+//     return events.filter((event) => {
+//       const matchesQuery =
+//         event.title.toLowerCase().includes(lowercaseQuery) ||
+//         event.description.toLowerCase().includes(lowercaseQuery);
+
+//       const matchesLocation =
+//         !location ||
+//         event.location.city.toLowerCase().includes(location.toLowerCase()) ||
+//         event.location.country.toLowerCase().includes(location.toLowerCase());
+
+//       return matchesQuery && matchesLocation;
+//     });
+//   }
+
+//   // 🔹 Update Event
+//   async updateEvent(
+//     id: string,
+//     data: Partial<Event>,
+//     token: string
+//   ): Promise<Event> {
+//     const response = await fetch(`${API_BASE_URL}/events/${id}`, {
+//       method: "PUT",
+//       headers: {
+//         Accept: "application/json",
+//         "Content-Type": "application/json",
+//         Authorization: `Bearer ${token}`,
+//       },
+//       body: JSON.stringify(data),
+//     });
+
+//     if (!response.ok) {
+//       const err = await response.json();
+//       alert(err.message || "Update failed");
+//       throw new Error(err.message || "Update failed");
+//     }
+
+//     return await response.json();
+//   }
+
+//   // 🔹 Delete Event (with alert handling)
+//   async deleteEvent(id: string, token: string): Promise<void> {
+//     const response = await fetch(`${API_BASE_URL}/events/${id}`, {
+//       method: "DELETE",
+//       headers: {
+//         Accept: "application/json",
+//         Authorization: `Bearer ${token}`,
+//       },
+//     });
+
+//     if (!response.ok) {
+//       const err = await response.json();
+
+//       if (err.message === "Only the event creator can delete this event") {
+//         alert("❌ Only the event creator can delete this event");
+//       } else {
+//         alert(err.message || "Delete failed");
+//       }
+
+//       throw new Error(err.message || "Delete failed");
+//     }
+
+//     alert("✅ Event deleted successfully!");
+//   }
+// }
+
+// export const eventService = new EventService();
+
+
+
+
+import { Event, EventStatus,  UserPreferences,  Role} from "../types";
 
 const API_BASE_URL = "https://gbs.westsidecarcare.com.au";
 
+interface RoleResponse {
+  _id: string;
+  name: string;
+  label: string;
+  permissions: { permission: string }[];
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 class EventService {
-  // 🔹 Get All Events
-  async getAllEvents(
-    state?: string,
-    page?: number,
-    limit?: number
-  ): Promise<Event[]> {
-    const params = new URLSearchParams();
-    if (state) params.append("state", state);
-    if (page) params.append("page", page.toString());
-    if (limit) params.append("limit", limit.toString());
+  private mapToEvent(e: any): Event {
+    const now = new Date();
+    let status: EventStatus = 'upcoming';
+    if (new Date(e.endDate) < now) status = 'completed';
+    else if (new Date(e.startDate) <= now && new Date(e.endDate) >= now) status = 'live';
 
-    const response = await fetch(`${API_BASE_URL}/events?${params.toString()}`);
-    const data = await response.json();
+    const defaultPreferences: UserPreferences = {
+      notifications: true,
+      darkMode: false,
+      language: 'en',
+      privacy: {
+        profileVisibility: 'public',
+        showEmail: false,
+        showPhone: false,
+        allowMessages: true,
+      },
+    };
 
-    return data.map((e: any) => ({
+    const defaultRole: Role = {
+      id: '',
+      name: '',
+      description: '',
+      permissions: [],
+      isActive: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    return {
       id: e._id,
       title: e.title,
-      description: e.description,
+      description: e.description || '',
       image: e.imageUrl || "",
-      category: e.category || "",
-      status: "",
+      category: "other",
+      status,
       startDate: new Date(e.startDate),
       endDate: new Date(e.endDate),
+      state: e.state || 'All',
+      openToAll: e.openToAll ?? true,
+      area: e.area || { type: 'MultiPolygon', coordinates: [] },
       location: {
         id: "",
         name: e.locationNames?.[0] || "",
         address: "",
         city: e.locationNames?.[0]?.split(",")[0] || "",
-        country: e.locationNames?.[0]?.split(",")[1]?.trim() || "",
+        country: e.locationNames?.[0]?.split(",")[1]?.trim() || "Australia",
         coordinates: {
-          lat: e.area?.coordinates?.[0]?.[0]?.[0]?.[0] || 0,
-          lng: e.area?.coordinates?.[0]?.[0]?.[0]?.[1] || 0,
+          lat: e.area?.coordinates?.[0]?.[0]?.[0]?.[1] || 0,
+          lng: e.area?.coordinates?.[0]?.[0]?.[0]?.[0] || 0,
         },
       },
       organizer: e.creator
         ? {
             id: e.creator._id,
             name: e.creator.name,
-            avatar: e.creator.avatarUrl,
+            email: e.creator.email || '',
+            avatar: e.creator.avatarUrl || '',
+            bio: e.creator.bio || '',
+            location: e.creator.location || '',
+            phone: e.creator.phone || '',
+            dateOfBirth: e.creator.dateOfBirth ? new Date(e.creator.dateOfBirth) : undefined,
+            preferences: e.creator.preferences || defaultPreferences,
+            roles: e.creator.roles?.map((r: any) => ({
+              id: r._id || '',
+              name: r.name || '',
+              description: r.description || '',
+              permissions: r.permissions?.map((p: any) => ({
+                id: p._id || '',
+                name: p.name || '',
+                description: p.description || '',
+                resource: p.resource || '',
+                action: p.action || '',
+                isActive: p.isActive ?? true,
+                createdAt: new Date(p.createdAt || now),
+                updatedAt: new Date(p.updatedAt || now),
+                label: p.label || '',
+              })) || [],
+              isActive: r.isActive ?? true,
+              createdAt: new Date(r.createdAt || now),
+              updatedAt: new Date(r.updatedAt || now),
+            })) || [defaultRole],
+            isActive: e.creator.isActive ?? true,
+            createdAt: new Date(e.creator.createdAt || now),
+            updatedAt: new Date(e.creator.updatedAt || now),
           }
-        : {},
-      attendees: e.attendees || [],
+        : {
+            id: "",
+            name: "",
+            email: "",
+            avatar: "",
+            preferences: defaultPreferences,
+            roles: [defaultRole],
+            isActive: true,
+            createdAt: now,
+            updatedAt: now,
+          },
+      attendees: e.attendees?.map((a: any) => ({
+        id: a._id,
+        name: a.name,
+        email: a.email || '',
+        avatar: a.avatarUrl || '',
+        preferences: a.preferences || defaultPreferences,
+        roles: a.roles?.map((r: any) => ({
+          id: r._id || '',
+          name: r.name || '',
+          description: r.description || '',
+          permissions: r.permissions?.map((p: any) => ({
+            id: p._id || '',
+            name: p.name || '',
+            description: p.description || '',
+            resource: p.resource || '',
+            action: p.action || '',
+            isActive: p.isActive ?? true,
+            createdAt: new Date(p.createdAt || now),
+            updatedAt: new Date(p.updatedAt || now),
+            label: p.label || '',
+          })) || [],
+          isActive: r.isActive ?? true,
+          createdAt: new Date(r.createdAt || now),
+          updatedAt: new Date(r.updatedAt || now),
+        })) || [defaultRole],
+        isActive: a.isActive ?? true,
+        createdAt: new Date(a.createdAt || now),
+        updatedAt: new Date(a.updatedAt || now),
+      })) || [],
+      roles: e.roles?.map((r: any) => r._id?.toString() || r.toString()) || [],
       maxAttendees: 0,
       price: 0,
       tags: [],
       isPopular: e.isFeatured || false,
-      isLive: false,
+      isLive: status === 'live',
       createdAt: new Date(e.createdAt),
       updatedAt: new Date(e.updatedAt),
-    }));
+    };
   }
 
-  // 🔹 Popular Events
-  async getPopularEvents(): Promise<Event[]> {
-    const events = await this.getAllEvents();
-    return events.filter((event) => event.isPopular);
-  }
-
-  // 🔹 Upcoming Events
-  async getUpcomingEvents(): Promise<Event[]> {
-    const events = await this.getAllEvents();
-    const now = new Date();
-    return events.filter((event) => event.startDate > now);
-  }
-
-  // 🔹 Live Events
-  async getLiveEvents(): Promise<Event[]> {
-    const events = await this.getAllEvents();
-    return events.filter((event) => event.isLive);
-  }
-
-  // 🔹 Search Events
-  async searchEvents(query: string, location?: string): Promise<Event[]> {
-    const events = await this.getAllEvents();
-    const lowercaseQuery = query.toLowerCase();
-    return events.filter((event) => {
-      const matchesQuery =
-        event.title.toLowerCase().includes(lowercaseQuery) ||
-        event.description.toLowerCase().includes(lowercaseQuery);
-
-      const matchesLocation =
-        !location ||
-        event.location.city.toLowerCase().includes(location.toLowerCase()) ||
-        event.location.country.toLowerCase().includes(location.toLowerCase());
-
-      return matchesQuery && matchesLocation;
-    });
-  }
-
-  // 🔹 Update Event
-  async updateEvent(
-    id: string,
-    data: Partial<Event>,
-    token: string
-  ): Promise<Event> {
-    const response = await fetch(`${API_BASE_URL}/events/${id}`, {
-      method: "PUT",
+  async fetchRoles(token: string): Promise<RoleResponse[]> {
+    const response = await fetch(`${API_BASE_URL}/roles`, {
       headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify(data),
     });
 
     if (!response.ok) {
       const err = await response.json();
-      alert(err.message || "Update failed");
-      throw new Error(err.message || "Update failed");
+      throw new Error(err.message || "Failed to fetch roles");
     }
 
     return await response.json();
   }
 
-  // 🔹 Delete Event (with alert handling)
+  async createEvent(data: Partial<Event>, token: string): Promise<Event> {
+    if (!data.area) {
+      throw new Error("GeoJSON area is required");
+    }
+    const response = await fetch(`${API_BASE_URL}/events`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        title: data.title,
+        description: data.description,
+        state: data.state,
+        area: data.area,
+        openToAll: data.openToAll,
+        startDate: data.startDate?.toISOString(),
+        endDate: data.endDate?.toISOString(),
+        roles: data.roles,
+        isFeatured: data.isPopular,
+      }),
+    });
+
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.message || "Failed to create event");
+    }
+
+    const created = await response.json();
+    return this.mapToEvent(created);
+  }
+
+  async getAllEvents(state?: string, page?: number, limit?: number): Promise<Event[]> {
+    const params = new URLSearchParams();
+    if (state) params.append("state", state);
+    if (page) params.append("page", page.toString());
+    if (limit) params.append("limit", limit.toString());
+
+    const response = await fetch(`${API_BASE_URL}/events?${params.toString()}`);
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.message || "Failed to fetch events");
+    }
+
+    const data = await response.json();
+    return data.map((e: any) => this.mapToEvent(e));
+  }
+
+  async getFeaturedEvents(state?: string, page?: number, limit?: number): Promise<Event[]> {
+    const params = new URLSearchParams();
+    if (state) params.append("state", state);
+    if (page) params.append("page", page.toString());
+    if (limit) params.append("limit", limit.toString());
+
+    const response = await fetch(`${API_BASE_URL}/events/featured?${params.toString()}`);
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.message || "Failed to fetch featured events");
+    }
+
+    const data = await response.json();
+    return data.map((e: any) => this.mapToEvent(e));
+  }
+
+  async getEventById(id: string): Promise<Event> {
+    const response = await fetch(`${API_BASE_URL}/events/${id}`);
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.message || "Failed to fetch event");
+    }
+
+    const data = await response.json();
+    return this.mapToEvent(data);
+  }
+
+  async updateEvent(id: string, data: Partial<Event>, token: string): Promise<Event> {
+    const response = await fetch(`${API_BASE_URL}/events/${id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        title: data.title,
+        description: data.description,
+        state: data.state,
+        area: data.area,
+        openToAll: data.openToAll,
+        startDate: data.startDate?.toISOString(),
+        endDate: data.endDate?.toISOString(),
+        roles: data.roles,
+        isFeatured: data.isPopular,
+      }),
+    });
+
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.message || "Failed to update event");
+    }
+
+    const updated = await response.json();
+    return this.mapToEvent(updated);
+  }
+
   async deleteEvent(id: string, token: string): Promise<void> {
     const response = await fetch(`${API_BASE_URL}/events/${id}`, {
       method: "DELETE",
       headers: {
-        Accept: "application/json",
         Authorization: `Bearer ${token}`,
       },
     });
 
     if (!response.ok) {
       const err = await response.json();
+      throw new Error(err.message || "Failed to delete event");
+    }
+  }
 
-      if (err.message === "Only the event creator can delete this event") {
-        alert("❌ Only the event creator can delete this event");
-      } else {
-        alert(err.message || "Delete failed");
-      }
+  async bookEvent(id: string, token: string): Promise<Event> {
+    const response = await fetch(`${API_BASE_URL}/events/${id}/book_event`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
 
-      throw new Error(err.message || "Delete failed");
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.message || "Failed to book event");
     }
 
-    alert("✅ Event deleted successfully!");
+    const booked = await response.json();
+    return this.mapToEvent(booked);
+  }
+
+  async getImageUploadUrl(id: string, fileName: string, fileType: string, token: string): Promise<{ url: string; key: string }> {
+    const params = new URLSearchParams({ fileName, fileType });
+    const response = await fetch(`${API_BASE_URL}/events/${id}/image/upload-url?${params.toString()}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.message || "Failed to get upload URL");
+    }
+
+    return await response.json();
+  }
+
+  async updateEventImage(id: string, fileKey: string, token: string): Promise<{ imageUrl: string }> {
+    const response = await fetch(`${API_BASE_URL}/events/${id}/image`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ fileKey }),
+    });
+
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.message || "Failed to update image");
+    }
+
+    return await response.json();
+  }
+
+  async getEventImageUrl(id: string): Promise<{ url: string }> {
+    const response = await fetch(`${API_BASE_URL}/events/${id}/image`);
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.message || "Failed to get image URL");
+    }
+
+    return await response.json();
+  }
+
+  async toggleFeatured(id: string, isFeatured: boolean, token: string): Promise<Event> {
+    const response = await fetch(`${API_BASE_URL}/events/${id}/feature`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ isFeatured }),
+    });
+
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.message || "Failed to toggle featured");
+    }
+
+    const toggled = await response.json();
+    return this.mapToEvent(toggled);
+  }
+
+  async searchEvents(query: string, state?: string): Promise<Event[]> {
+    const events = await this.getAllEvents(state);
+    const lowercaseQuery = query.toLowerCase();
+    return events.filter((event) => {
+      const matchesQuery =
+        event.title.toLowerCase().includes(lowercaseQuery) ||
+        event.description.toLowerCase().includes(lowercaseQuery);
+      const matchesState = !state || event.state === state;
+      return matchesQuery && matchesState;
+    });
   }
 }
 
 export const eventService = new EventService();
-
