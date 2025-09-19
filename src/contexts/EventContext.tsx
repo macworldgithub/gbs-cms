@@ -240,9 +240,7 @@ export const EventProvider: React.FC<EventProviderProps> = ({ children }) => {
       setLoading(true);
       setError(null);
 
-      const { events: allEvents, total } = await eventService.getAllEvents(
-        state
-      );
+      const allEvents = await eventService.getAllEvents(state);
       const featured = await eventService.getFeaturedEvents(state);
 
       const now = new Date();

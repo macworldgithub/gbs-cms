@@ -761,9 +761,9 @@ class EventService {
     state?: string,
     page?: number,
     limit?: number
-  ): Promise<{ events: Event[]; total: number }> {
+  ): Promise<Event[]> {
     const params = new URLSearchParams();
-    if (state && state !== "All") params.append("state", state);
+    if (state) params.append("state", state);
     if (page) params.append("page", page.toString());
     if (limit) params.append("limit", limit.toString());
 
@@ -774,11 +774,10 @@ class EventService {
     }
 
     const data = await response.json();
-    console.log("Fetched events data:", data);
-    return {
-      events: (data.events || []).map((e: any) => this.mapToEvent(e)),
-      total: data.total ?? 0,
-    };
+    // return data.map((e: any) => this.mapToEvent(e));
+    return Array.isArray(data.events)
+      ? data.events.map((e: any) => this.mapToEvent(e))
+      : [];
   }
 
   async getFeaturedEvents(
@@ -800,7 +799,10 @@ class EventService {
     }
 
     const data = await response.json();
-    return data.map((e: any) => this.mapToEvent(e));
+    // return data.map((e: any) => this.mapToEvent(e));
+    return Array.isArray(data.events)
+      ? data.events.map((e: any) => this.mapToEvent(e))
+      : [];
   }
 
   async getEventById(id: string): Promise<Event> {
