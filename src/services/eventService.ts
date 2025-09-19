@@ -553,10 +553,7 @@
 
 // export const eventService = new EventService();
 
-
-
-
-import { Event, EventStatus,  UserPreferences,  Role} from "../types";
+import { Event, EventStatus, UserPreferences, Role } from "../types";
 
 const API_BASE_URL = "https://gbs.westsidecarcare.com.au";
 
@@ -573,16 +570,17 @@ interface RoleResponse {
 class EventService {
   private mapToEvent(e: any): Event {
     const now = new Date();
-    let status: EventStatus = 'upcoming';
-    if (new Date(e.endDate) < now) status = 'completed';
-    else if (new Date(e.startDate) <= now && new Date(e.endDate) >= now) status = 'live';
+    let status: EventStatus = "upcoming";
+    if (new Date(e.endDate) < now) status = "completed";
+    else if (new Date(e.startDate) <= now && new Date(e.endDate) >= now)
+      status = "live";
 
     const defaultPreferences: UserPreferences = {
       notifications: true,
       darkMode: false,
-      language: 'en',
+      language: "en",
       privacy: {
-        profileVisibility: 'public',
+        profileVisibility: "public",
         showEmail: false,
         showPhone: false,
         allowMessages: true,
@@ -590,9 +588,9 @@ class EventService {
     };
 
     const defaultRole: Role = {
-      id: '',
-      name: '',
-      description: '',
+      id: "",
+      name: "",
+      description: "",
       permissions: [],
       isActive: true,
       createdAt: new Date(),
@@ -602,15 +600,15 @@ class EventService {
     return {
       id: e._id,
       title: e.title,
-      description: e.description || '',
+      description: e.description || "",
       image: e.imageUrl || "",
       category: "other",
       status,
       startDate: new Date(e.startDate),
       endDate: new Date(e.endDate),
-      state: e.state || 'All',
+      state: e.state || "All",
       openToAll: e.openToAll ?? true,
-      area: e.area || { type: 'MultiPolygon', coordinates: [] },
+      area: e.area || { type: "MultiPolygon", coordinates: [] },
       location: {
         id: "",
         name: e.locationNames?.[0] || "",
@@ -626,28 +624,31 @@ class EventService {
         ? {
             id: e.creator._id,
             name: e.creator.name,
-            email: e.creator.email || '',
-            avatar: e.creator.avatarUrl || '',
-            bio: e.creator.bio || '',
-            location: e.creator.location || '',
-            phone: e.creator.phone || '',
-            dateOfBirth: e.creator.dateOfBirth ? new Date(e.creator.dateOfBirth) : undefined,
+            email: e.creator.email || "",
+            avatar: e.creator.avatarUrl || "",
+            bio: e.creator.bio || "",
+            location: e.creator.location || "",
+            phone: e.creator.phone || "",
+            dateOfBirth: e.creator.dateOfBirth
+              ? new Date(e.creator.dateOfBirth)
+              : undefined,
             preferences: e.creator.preferences || defaultPreferences,
             roles: e.creator.roles?.map((r: any) => ({
-              id: r._id || '',
-              name: r.name || '',
-              description: r.description || '',
-              permissions: r.permissions?.map((p: any) => ({
-                id: p._id || '',
-                name: p.name || '',
-                description: p.description || '',
-                resource: p.resource || '',
-                action: p.action || '',
-                isActive: p.isActive ?? true,
-                createdAt: new Date(p.createdAt || now),
-                updatedAt: new Date(p.updatedAt || now),
-                label: p.label || '',
-              })) || [],
+              id: r._id || "",
+              name: r.name || "",
+              description: r.description || "",
+              permissions:
+                r.permissions?.map((p: any) => ({
+                  id: p._id || "",
+                  name: p.name || "",
+                  description: p.description || "",
+                  resource: p.resource || "",
+                  action: p.action || "",
+                  isActive: p.isActive ?? true,
+                  createdAt: new Date(p.createdAt || now),
+                  updatedAt: new Date(p.updatedAt || now),
+                  label: p.label || "",
+                })) || [],
               isActive: r.isActive ?? true,
               createdAt: new Date(r.createdAt || now),
               updatedAt: new Date(r.updatedAt || now),
@@ -667,41 +668,43 @@ class EventService {
             createdAt: now,
             updatedAt: now,
           },
-      attendees: e.attendees?.map((a: any) => ({
-        id: a._id,
-        name: a.name,
-        email: a.email || '',
-        avatar: a.avatarUrl || '',
-        preferences: a.preferences || defaultPreferences,
-        roles: a.roles?.map((r: any) => ({
-          id: r._id || '',
-          name: r.name || '',
-          description: r.description || '',
-          permissions: r.permissions?.map((p: any) => ({
-            id: p._id || '',
-            name: p.name || '',
-            description: p.description || '',
-            resource: p.resource || '',
-            action: p.action || '',
-            isActive: p.isActive ?? true,
-            createdAt: new Date(p.createdAt || now),
-            updatedAt: new Date(p.updatedAt || now),
-            label: p.label || '',
-          })) || [],
-          isActive: r.isActive ?? true,
-          createdAt: new Date(r.createdAt || now),
-          updatedAt: new Date(r.updatedAt || now),
-        })) || [defaultRole],
-        isActive: a.isActive ?? true,
-        createdAt: new Date(a.createdAt || now),
-        updatedAt: new Date(a.updatedAt || now),
-      })) || [],
+      attendees:
+        e.attendees?.map((a: any) => ({
+          id: a._id,
+          name: a.name,
+          email: a.email || "",
+          avatar: a.avatarUrl || "",
+          preferences: a.preferences || defaultPreferences,
+          roles: a.roles?.map((r: any) => ({
+            id: r._id || "",
+            name: r.name || "",
+            description: r.description || "",
+            permissions:
+              r.permissions?.map((p: any) => ({
+                id: p._id || "",
+                name: p.name || "",
+                description: p.description || "",
+                resource: p.resource || "",
+                action: p.action || "",
+                isActive: p.isActive ?? true,
+                createdAt: new Date(p.createdAt || now),
+                updatedAt: new Date(p.updatedAt || now),
+                label: p.label || "",
+              })) || [],
+            isActive: r.isActive ?? true,
+            createdAt: new Date(r.createdAt || now),
+            updatedAt: new Date(r.updatedAt || now),
+          })) || [defaultRole],
+          isActive: a.isActive ?? true,
+          createdAt: new Date(a.createdAt || now),
+          updatedAt: new Date(a.updatedAt || now),
+        })) || [],
       roles: e.roles?.map((r: any) => r._id?.toString() || r.toString()) || [],
       maxAttendees: 0,
       price: 0,
       tags: [],
       isPopular: e.isFeatured || false,
-      isLive: status === 'live',
+      isLive: status === "live",
       createdAt: new Date(e.createdAt),
       updatedAt: new Date(e.updatedAt),
     };
@@ -754,9 +757,13 @@ class EventService {
     return this.mapToEvent(created);
   }
 
-  async getAllEvents(state?: string, page?: number, limit?: number): Promise<Event[]> {
+  async getAllEvents(
+    state?: string,
+    page?: number,
+    limit?: number
+  ): Promise<{ events: Event[]; total: number }> {
     const params = new URLSearchParams();
-    if (state) params.append("state", state);
+    if (state && state !== "All") params.append("state", state);
     if (page) params.append("page", page.toString());
     if (limit) params.append("limit", limit.toString());
 
@@ -767,16 +774,26 @@ class EventService {
     }
 
     const data = await response.json();
-    return data.map((e: any) => this.mapToEvent(e));
+    console.log("Fetched events data:", data);
+    return {
+      events: (data.events || []).map((e: any) => this.mapToEvent(e)),
+      total: data.total ?? 0,
+    };
   }
 
-  async getFeaturedEvents(state?: string, page?: number, limit?: number): Promise<Event[]> {
+  async getFeaturedEvents(
+    state?: string,
+    page?: number,
+    limit?: number
+  ): Promise<Event[]> {
     const params = new URLSearchParams();
     if (state) params.append("state", state);
     if (page) params.append("page", page.toString());
     if (limit) params.append("limit", limit.toString());
 
-    const response = await fetch(`${API_BASE_URL}/events/featured?${params.toString()}`);
+    const response = await fetch(
+      `${API_BASE_URL}/events/featured?${params.toString()}`
+    );
     if (!response.ok) {
       const err = await response.json();
       throw new Error(err.message || "Failed to fetch featured events");
@@ -797,7 +814,11 @@ class EventService {
     return this.mapToEvent(data);
   }
 
-  async updateEvent(id: string, data: Partial<Event>, token: string): Promise<Event> {
+  async updateEvent(
+    id: string,
+    data: Partial<Event>,
+    token: string
+  ): Promise<Event> {
     const response = await fetch(`${API_BASE_URL}/events/${id}`, {
       method: "PUT",
       headers: {
@@ -857,13 +878,21 @@ class EventService {
     return this.mapToEvent(booked);
   }
 
-  async getImageUploadUrl(id: string, fileName: string, fileType: string, token: string): Promise<{ url: string; key: string }> {
+  async getImageUploadUrl(
+    id: string,
+    fileName: string,
+    fileType: string,
+    token: string
+  ): Promise<{ url: string; key: string }> {
     const params = new URLSearchParams({ fileName, fileType });
-    const response = await fetch(`${API_BASE_URL}/events/${id}/image/upload-url?${params.toString()}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    const response = await fetch(
+      `${API_BASE_URL}/events/${id}/image/upload-url?${params.toString()}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
 
     if (!response.ok) {
       const err = await response.json();
@@ -873,7 +902,11 @@ class EventService {
     return await response.json();
   }
 
-  async updateEventImage(id: string, fileKey: string, token: string): Promise<{ imageUrl: string }> {
+  async updateEventImage(
+    id: string,
+    fileKey: string,
+    token: string
+  ): Promise<{ imageUrl: string }> {
     const response = await fetch(`${API_BASE_URL}/events/${id}/image`, {
       method: "POST",
       headers: {
@@ -901,7 +934,11 @@ class EventService {
     return await response.json();
   }
 
-  async toggleFeatured(id: string, isFeatured: boolean, token: string): Promise<Event> {
+  async toggleFeatured(
+    id: string,
+    isFeatured: boolean,
+    token: string
+  ): Promise<Event> {
     const response = await fetch(`${API_BASE_URL}/events/${id}/feature`, {
       method: "PUT",
       headers: {
