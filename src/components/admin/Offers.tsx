@@ -2,7 +2,10 @@ import React, { useState, useEffect } from "react";
 import { Button } from "../ui/button";
 import { Card } from "../ui/card";
 import { toast } from "react-toastify";
-import { VITE_API_BASE_URL as API_BASE_URL } from "../../utils/config/server";
+import {
+  VITE_API_BASE_URL as API_BASE_URL,
+  AUTH_TOKEN,
+} from "../../utils/config/server";
 import {
   Gift,
   CalendarDays,
@@ -15,7 +18,6 @@ import {
   Mail,
   FileText,
   ImagePlus,
-
 } from "lucide-react";
 
 type Offer = {
@@ -28,7 +30,6 @@ type Offer = {
   expiryDate: string;
   locations: string;
   image?: string;
-
 };
 
 export default function Offers() {
@@ -46,23 +47,31 @@ export default function Offers() {
     limit: 10,
   });
 
-  // Fetch Offers from API
   useEffect(() => {
     fetchOffers();
   }, []);
+
+  const getAuthHeaders = (): HeadersInit => ({
+    accept: "application/json",
+    Authorization: `Bearer ${AUTH_TOKEN}`,
+  });
 
   const fetchOffers = async () => {
     try {
       setLoading(true);
       const res = await fetch(`${API_BASE_URL}/offer`, {
         method: "GET",
-        headers: { accept: "application/json" },
+        headers: getAuthHeaders(),
       });
-      if (!res.ok) throw new Error("Failed to fetch offers");
+      if (!res.ok) {
+        if (res.status === 401) toast.error("Unauthorized access");
+        throw new Error("Failed to fetch offers");
+      }
       const data = await res.json();
-      setOffers(data);
+      setOffers(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error("Error fetching offers:", err);
+      toast.error("Failed to load offers");
     } finally {
       setLoading(false);
     }
@@ -85,13 +94,14 @@ export default function Offers() {
       query.append("limit", String(filters.limit));
 
       const url = `${API_BASE_URL}/offer/search?${query.toString()}`;
-      const res = await fetch(url, { headers: { accept: "application/json" } });
-      if (!res.ok) throw new Error("Failed to fetch search offers");
+      const res = await fetch(url, { headers: getAuthHeaders() });
+      if (!res.ok) throw new Error("Search failed");
 
       const data = await res.json();
       setOffers(Array.isArray(data.offers) ? data.offers : []);
     } catch (err) {
       console.error("Error searching offers:", err);
+      toast.error("Search failed");
     } finally {
       setLoading(false);
     }
@@ -104,14 +114,14 @@ export default function Offers() {
     setFilters((prev) => ({ ...prev, [name]: value }));
   };
 
-  // ✅ DELETE API
   const handleDelete = async (_id: string) => {
     if (!window.confirm("Are you sure you want to delete this offer?")) return;
     try {
-      await fetch(`${API_BASE_URL}/offer/${_id}`, {
+      const res = await fetch(`${API_BASE_URL}/offer/${_id}`, {
         method: "DELETE",
-        headers: { accept: "application/json" },
+        headers: getAuthHeaders(),
       });
+      if (!res.ok) throw new Error("Delete failed");
       setOffers((prev) => prev.filter((o) => o._id !== _id));
       toast.success("Offer deleted successfully");
     } catch (err) {
@@ -120,8 +130,6 @@ export default function Offers() {
     }
   };
 
-
-  // ✅ Upload Offer Image (corrected flow)
   const handleImageUpload = async (id: string) => {
     const input = document.createElement("input");
     input.type = "file";
@@ -132,31 +140,33 @@ export default function Offers() {
       if (!file) return;
 
       try {
-        // Step 1: Get pre-signed S3 upload URL
-        const url = `${API_BASE_URL}/offer/${id}/image/upload-url?fileName=${encodeURIComponent(file.name)}&fileType=${encodeURIComponent(file.type)}`;
+        const url = `${API_BASE_URL}/offer/${id}/image/upload-url?fileName=${encodeURIComponent(
+          file.name
+        )}&fileType=${encodeURIComponent(file.type)}`;
         const res = await fetch(url, {
           method: "GET",
-          headers: { accept: "application/json" },
+          headers: getAuthHeaders(),
         });
 
         if (!res.ok) throw new Error("Failed to get upload URL");
 
         const { url: uploadUrl, key } = await res.json();
 
-        // Step 2: Upload file directly to S3
         const uploadRes = await fetch(uploadUrl, {
           method: "PUT",
           headers: { "Content-Type": file.type },
           body: file,
         });
 
-        if (!uploadRes.ok) throw new Error("Failed to upload file to S3");
+        if (!uploadRes.ok) throw new Error("Failed to upload to S3");
 
-        // Step 3: Tell backend the final fileKey
         const patchRes = await fetch(`${API_BASE_URL}/offer/${id}/image`, {
           method: "PATCH",
-          headers: { "Content-Type": "application/json", accept: "application/json" },
-          body: JSON.stringify({ fileKey: key }), // 👈 yahan sirf key bhejna hai
+          headers: {
+            "Content-Type": "application/json",
+            ...getAuthHeaders(),
+          },
+          body: JSON.stringify({ fileKey: key }),
         });
 
         if (!patchRes.ok) throw new Error("Failed to update offer image");
@@ -171,8 +181,6 @@ export default function Offers() {
 
     input.click();
   };
-
-
 
   return (
     <div className="p-6 max-w-5xl mx-auto">
@@ -276,7 +284,6 @@ export default function Offers() {
                 />
               )}
 
-
               <div className="flex gap-4">
                 <div className="shrink-0">
                   <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-red-50 flex items-center justify-center">
@@ -343,7 +350,36 @@ export default function Offers() {
       </div>
 
       {open && (
-        <AddOfferModal onClose={() => setOpen(false)} onSave={handleAdd} />
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50">
+          {" "}
+          {/* Higher z-index, semi-transparent bg on container */}
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[520px] max-h-[90vh] overflow-y-auto p-6 relative">
+            {/* Close button inside modal */}
+            <button
+              onClick={() => setOpen(false)}
+              className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
+            >
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+
+            <AddOfferModalContent
+              onClose={() => setOpen(false)}
+              onSave={handleAdd}
+            />
+          </div>
+        </div>
       )}
 
       {editOffer && (
@@ -393,7 +429,6 @@ type OfferDetails = {
   updatedAt: string;
   __v: number;
 };
-
 
 function OfferDetailsModal({
   offerId,
@@ -511,13 +546,14 @@ function OfferDetailsModal({
               <strong>Redemptions:</strong> {offer.redemptionCount}
             </p>
             <p className="text-sm text-gray-600">
-              <strong>Created At:</strong> {new Date(offer.createdAt).toLocaleString()}
+              <strong>Created At:</strong>{" "}
+              {new Date(offer.createdAt).toLocaleString()}
             </p>
             <p className="text-sm text-gray-600">
-              <strong>Updated At:</strong> {new Date(offer.updatedAt).toLocaleString()}
+              <strong>Updated At:</strong>{" "}
+              {new Date(offer.updatedAt).toLocaleString()}
             </p>
           </div>
-
         )}
         {/* Close Button */}
         <div className="flex justify-end">
@@ -533,7 +569,7 @@ function OfferDetailsModal({
   );
 }
 /* ---------------- Add Offer Modal ---------------- */
-function AddOfferModal({
+function AddOfferModalContent({
   onClose,
   onSave,
 }: {
@@ -542,48 +578,54 @@ function AddOfferModal({
 }) {
   const [form, setForm] = useState({
     businessId: "",
-    image: "offer/12345/image/offer-promo.jpg",
     title: "",
     discount: "",
-    offerType: "Member",
+    offerType: "Member" as "Member" | "Partner",
     category: "",
     expiryDate: "",
     description: "",
-    termsAndConditions: [""],
+    termsAndConditions: [""] as string[],
     howToRedeem: "",
     contactPhone: "",
     contactEmail: "",
-    locations: [""],
+    locations: [""] as string[],
+    image: "", // Optional - can be added later via upload button
   });
 
   const [loading, setLoading] = useState(false);
   const [businesses, setBusinesses] = useState<any[]>([]);
+  const [businessLoading, setBusinessLoading] = useState(true);
 
   useEffect(() => {
     const fetchBusinesses = async () => {
       try {
-        const res = await fetch(`https://gbs.westsidecarcare.com.au/business`);
-        if (!res.ok) throw new Error("Failed to fetch businesses");
+        setBusinessLoading(true);
+        const res = await fetch(`${API_BASE_URL}/business`, {
+          headers: {
+            accept: "application/json",
+            Authorization: `Bearer ${AUTH_TOKEN}`,
+          },
+        });
+        if (!res.ok) {
+          if (res.status === 401)
+            toast.error("Unauthorized - Please log in again");
+          throw new Error("Failed to load businesses");
+        }
         const data = await res.json();
-        setBusinesses(data);
+        setBusinesses(Array.isArray(data) ? data : []);
       } catch (err) {
         console.error("Error fetching businesses:", err);
-        toast.error("Failed to load businesses");
+        toast.error("Failed to load your businesses");
+        setBusinesses([]);
+      } finally {
+        setBusinessLoading(false);
       }
     };
     fetchBusinesses();
   }, []);
 
-  const update = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >
-  ) => {
-    const { name, value } = e.target;
-    setForm((f) => ({
-      ...f,
-      [name]: value,
-    }));
+  const updateField = (name: string, value: any) => {
+    setForm((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSave = async () => {
@@ -591,196 +633,255 @@ function AddOfferModal({
       toast.error("Please select a business");
       return;
     }
+    if (!form.title || !form.discount || !form.expiryDate) {
+      toast.error("Please fill required fields: Title, Discount, Expiry Date");
+      return;
+    }
 
     try {
       setLoading(true);
-      const res = await fetch(
-        `${API_BASE_URL}/offer/${form.businessId}`, // ✅ dynamic businessId
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            ...form,
-            expiryDate: form.expiryDate
-              ? new Date(form.expiryDate).toISOString()
-              : null,
-            locations: form.locations.filter((l) => l.trim() !== ""),
-            termsAndConditions: form.termsAndConditions.filter(
-              (t) => t.trim() !== ""
-            ),
-          }),
-        }
-      );
-      if (!res.ok) throw new Error("Failed to add offer");
-      const created = await res.json();
-      onSave(created);
-      toast.success("Offer added successfully");
+
+      const payload = {
+        title: form.title.trim(),
+        discount: form.discount.trim(),
+        offerType: form.offerType,
+        category: form.category,
+        description: form.description.trim(),
+        expiryDate: new Date(form.expiryDate).toISOString(),
+        termsAndConditions: form.termsAndConditions.filter(
+          (t) => t.trim() !== ""
+        ),
+        howToRedeem: form.howToRedeem.trim(),
+        contactPhone: form.contactPhone.trim(),
+        contactEmail: form.contactEmail.trim(),
+        locations: form.locations.filter((l) => l.trim() !== ""),
+        image: form.image || undefined, // Only send if set
+      };
+
+      const res = await fetch(`${API_BASE_URL}/offer/${form.businessId}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${AUTH_TOKEN}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(`Server error: ${res.status} - ${errorText}`);
+      }
+
+      const createdOffer = await res.json();
+      onSave(createdOffer);
+      toast.success("Offer added successfully!");
       onClose();
-    } catch (err) {
-      console.error("Error adding offer:", err);
-      toast.error("Failed to add offer");
+    } catch (err: any) {
+      console.error("Add offer error:", err);
+      toast.error(err.message || "Failed to add offer");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Background overlay */}
-      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
+    <>
+      <h4 className="text-2xl font-bold text-gray-900 mb-6 text-center">
+        Add New Exclusive Offer
+      </h4>
 
-      {/* Modal box with scroll */}
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-[520px] max-h-[90vh] overflow-y-auto p-5">
-        <h4 className="text-lg font-semibold mb-4">Add New Offer</h4>
-        <div className="space-y-3">
-          {/* Business Select Dropdown */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Business
-            </label>
+      <div className="space-y-5">
+        {/* Business Dropdown */}
+        <div>
+          <label className="block text-sm font-semibold text-gray-800 mb-2">
+            Select Your Business *
+          </label>
+          {businessLoading ? (
+            <p className="text-gray-500">Loading your businesses...</p>
+          ) : businesses.length === 0 ? (
+            <p className="text-red-500">No businesses found. Add one first.</p>
+          ) : (
             <select
-              name="businessId"
               value={form.businessId}
-              onChange={update}
-              className="w-full border rounded-lg px-3 py-2 bg-gray-50"
+              onChange={(e) => updateField("businessId", e.target.value)}
+              className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 focus:border-[#ec2227] focus:outline-none"
             >
-              <option value="">-- Select Business --</option>
+              <option value="">-- Choose Business --</option>
               {businesses.map((b) => (
                 <option key={b._id} value={b._id}>
-                  {b.companyName}
+                  {b.companyName} ({b.city || b.state})
                 </option>
               ))}
             </select>
-          </div>
+          )}
+        </div>
 
-          <LabeledInput
-            label="Title"
-            name="title"
-            value={form.title}
-            onChange={update}
-          />
-          <LabeledInput
-            label="Discount"
-            name="discount"
-            value={form.discount}
-            onChange={update}
-          />
-          <LabeledInput
-            label="Expiry Date"
-            name="expiryDate"
-            type="date"
-            value={form.expiryDate}
-            onChange={update}
-          />
+        {/* Title */}
+        <LabeledInput
+          label="Offer Title *"
+          name="title"
+          placeholder="e.g. 20% Off Premium Menswear"
+          value={form.title}
+          onChange={(e) => updateField("title", e.target.value)}
+        />
+
+        {/* Discount */}
+        <LabeledInput
+          label="Discount Text *"
+          name="discount"
+          placeholder="e.g. 10% off total bill"
+          value={form.discount}
+          onChange={(e) => updateField("discount", e.target.value)}
+        />
+
+        {/* Offer Type */}
+        <div>
+          <label className="block text-sm font-semibold text-gray-800 mb-2">
+            Offer Type
+          </label>
+          <select
+            value={form.offerType}
+            onChange={(e) => updateField("offerType", e.target.value)}
+            className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 focus:border-[#ec2227]"
+          >
+            <option value="Member">Member Offer</option>
+            <option value="Partner">Partner Offer</option>
+          </select>
+        </div>
+
+        {/* Category */}
+        <div>
+          <label className="block text-sm font-semibold text-gray-800 mb-2">
+            Category
+          </label>
+          <select
+            value={form.category}
+            onChange={(e) => updateField("category", e.target.value)}
+            className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 focus:border-[#ec2227]"
+          >
+            <option value="">Select Category</option>
+            <option value="Restaurant & Dining">Restaurant & Dining</option>
+            <option value="Professional Services">Professional Services</option>
+            <option value="Retail & Products">Retail & Products</option>
+            <option value="Health & Wellness">Health & Wellness</option>
+            <option value="Trade Services">Trade Services</option>
+            <option value="Energy Suppliers">Energy Suppliers</option>
+            <option value="Telecommunications">Telecommunications</option>
+            <option value="Automotive">Automotive</option>
+            <option value="Insurance">Insurance</option>
+            <option value="Travel & Accommodation">
+              Travel & Accommodation
+            </option>
+            <option value="Entertainment & Events">
+              Entertainment & Events
+            </option>
+            <option value="Technology & Software">Technology & Software</option>
+          </select>
+        </div>
+
+        {/* Expiry Date */}
+        <LabeledInput
+          label="Expiry Date *"
+          name="expiryDate"
+          type="date"
+          value={form.expiryDate}
+          onChange={(e) => updateField("expiryDate", e.target.value)}
+        />
+
+        {/* Description */}
+        <div>
+          <label className="block text-sm font-semibold text-gray-800 mb-2">
+            Description
+          </label>
           <textarea
-            name="description"
-            placeholder="Description"
+            placeholder="Tell members about this great offer..."
             value={form.description}
-            onChange={update}
-            rows={3}
-            className="w-full border rounded-lg px-3 py-2 bg-gray-50"
+            onChange={(e) => updateField("description", e.target.value)}
+            rows={4}
+            className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 focus:border-[#ec2227] focus:outline-none"
           />
-          <LabeledInput
-            label="Location (comma separated)"
-            name="locations"
-            value={form.locations.join(", ")}
-            onChange={(e) =>
-              setForm((f) => ({
-                ...f,
-                locations: e.target.value.split(",").map((l) => l.trim()),
-              }))
-            }
-          />
-          <LabeledInput
-            label="Contact Phone"
-            name="contactPhone"
-            value={form.contactPhone}
-            onChange={update}
-          />
-          <LabeledInput
-            label="Contact Email"
-            name="contactEmail"
-            value={form.contactEmail}
-            onChange={update}
-          />
+        </div>
+
+        {/* Locations */}
+        <LabeledInput
+          label="Locations (comma separated)"
+          name="locations"
+          placeholder="e.g. Melbourne, Sydney, Brisbane"
+          value={form.locations.join(", ")}
+          onChange={(e) =>
+            updateField(
+              "locations",
+              e.target.value.split(",").map((l) => l.trim())
+            )
+          }
+        />
+
+        {/* Contact Info */}
+        <LabeledInput
+          label="Contact Phone"
+          name="contactPhone"
+          placeholder="+61 4XX XXX XXX"
+          value={form.contactPhone}
+          onChange={(e) => updateField("contactPhone", e.target.value)}
+        />
+
+        <LabeledInput
+          label="Contact Email"
+          name="contactEmail"
+          type="email"
+          placeholder="offers@yourbusiness.com"
+          value={form.contactEmail}
+          onChange={(e) => updateField("contactEmail", e.target.value)}
+        />
+
+        {/* How to Redeem */}
+        <div>
+          <label className="block text-sm font-semibold text-gray-800 mb-2">
+            How to Redeem
+          </label>
           <textarea
-            name="termsAndConditions"
-            placeholder="Terms and Conditions (one per line)"
+            placeholder="e.g. Show this offer on the GBS App at checkout"
+            value={form.howToRedeem}
+            onChange={(e) => updateField("howToRedeem", e.target.value)}
+            rows={3}
+            className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 focus:border-[#ec2227]"
+          />
+        </div>
+
+        {/* Terms & Conditions */}
+        <div>
+          <label className="block text-sm font-semibold text-gray-800 mb-2">
+            Terms & Conditions (one per line)
+          </label>
+          <textarea
+            placeholder="Valid for dine-in only&#10;Not valid with other offers&#10;One use per customer"
             value={form.termsAndConditions.join("\n")}
             onChange={(e) =>
-              setForm((f) => ({
-                ...f,
-                termsAndConditions: e.target.value
-                  .split("\n")
-                  .map((t) => t.trim()),
-              }))
+              updateField(
+                "termsAndConditions",
+                e.target.value.split("\n").map((t) => t.trim())
+              )
             }
-            rows={3}
-            className="w-full border rounded-lg px-3 py-2 bg-gray-50"
+            rows={4}
+            className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 focus:border-[#ec2227]"
           />
-          <LabeledInput
-            label="How to Redeem"
-            name="howToRedeem"
-            value={form.howToRedeem}
-            onChange={update}
-          />
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Offer Type
-            </label>
-            <select
-              name="offerType"
-              value={form.offerType}
-              onChange={update}
-              className="w-full border rounded-lg px-3 py-2 bg-gray-50"
-            >
-              <option value="Member">Member</option>
-              <option value="Partner">Partner</option>
-            </select>
-          </div>
-          {/* ✅ Category Dropdown */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Category
-            </label>
-            <select
-              name="category"
-              value={form.category}
-              onChange={update}
-              className="w-full border rounded-lg px-3 py-2 bg-gray-50"
-            >
-              <option value="">Select Category</option>
-              <option value="Restaurant & Dining">Restaurant & Dining</option>
-              <option value="Professional Services">Professional Services</option>
-              <option value="Retail & Products">Retail & Products</option>
-              <option value="Health & Wellness">Health & Wellness</option>
-              <option value="Trade Services">Trade Services</option>
-              <option value="Energy Suppliers">Energy Suppliers</option>
-              <option value="Telecommunications">Telecommunications</option>
-              <option value="Automotive">Automotive</option>
-              <option value="Insurance">Insurance</option>
-              <option value="Travel & Accommodation">Travel & Accommodation</option>
-              <option value="Entertainment & Events">Entertainment & Events</option>
-              <option value="Technology & Software">Technology & Software</option>
-            </select>
-          </div>
-        </div>
-
-        {/* Buttons */}
-        <div className="mt-5 flex justify-end gap-2 sticky bottom-0 bg-white pt-3">
-          <Button onClick={onClose} variant="outline">
-            Cancel
-          </Button>
-          <Button
-            className="bg-[#ec2227] hover:bg-[#ec2227] text-white"
-            onClick={handleSave}
-            disabled={loading}
-          >
-            {loading ? "Saving..." : "Save"}
-          </Button>
         </div>
       </div>
-    </div>
+
+      {/* Action Buttons */}
+      <div className="flex justify-end gap-4 mt-8 pt-4 border-t border-gray-200">
+        <Button onClick={onClose} variant="outline" className="px-8">
+          Cancel
+        </Button>
+        <Button
+          onClick={handleSave}
+          disabled={loading || businessLoading}
+          className="bg-[#ec2227] hover:bg-[#d41e23] text-white px-10"
+        >
+          {loading ? "Saving Offer..." : "Publish Offer"}
+        </Button>
+      </div>
+    </>
   );
 }
 
@@ -798,7 +899,9 @@ function UpdateOfferModal({
   const [loading, setLoading] = useState(false);
 
   const update = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
   ) => setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
 
   const handleSave = async () => {
@@ -866,7 +969,11 @@ function UpdateOfferModal({
           <Button onClick={onClose} variant="outline">
             Cancel
           </Button>
-          <Button className="bg-[#ec2227] text-white" onClick={handleSave} disabled={loading}>
+          <Button
+            className="bg-[#ec2227] text-white"
+            onClick={handleSave}
+            disabled={loading}
+          >
             {loading ? "Saving..." : "Save"}
           </Button>
         </div>

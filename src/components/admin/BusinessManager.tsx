@@ -1,32 +1,35 @@
 import { UploadOutlined } from "@ant-design/icons";
 import { Input, Select, Tag, Upload } from "antd";
 import axios from "axios";
-import { PencilIcon, PlusIcon, TrashIcon } from 'lucide-react';
+import { PencilIcon, PlusIcon, TrashIcon } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { toast } from "react-toastify";
-import { VITE_API_BASE_URL as API_BASE_URL, AUTH_TOKEN } from "../../utils/config/server";
+import {
+  VITE_API_BASE_URL as API_BASE_URL,
+  AUTH_TOKEN,
+} from "../../utils/config/server";
 import { Button } from "../ui/button";
 import AddBusinessModal from "./AddBusinessModal";
 import EditBusinessModal from "./EditBusinessModal";
 import { Images, Star } from "lucide-react";
 
-const states = ['VIC', 'NSW', 'QLD', 'SA', 'WA'];
+const states = ["VIC", "NSW", "QLD", "SA", "WA"];
 const industry = [
-  'Professional Services',
-  'Construction & Trades',
-  'Technology & IT',
-  'Health & Wellness',
-  'Hospitality & Events',
-  'Retail & E-commerce',
-  'Manufacturing',
-  'Financial Services',
-  'Marketing & Media',
-  'Auto Industry',
-  'Other Services',
+  "Professional Services",
+  "Construction & Trades",
+  "Technology & IT",
+  "Health & Wellness",
+  "Hospitality & Events",
+  "Retail & E-commerce",
+  "Manufacturing",
+  "Financial Services",
+  "Marketing & Media",
+  "Auto Industry",
+  "Other Services",
 ];
 const tagOptions = ["Corporate Law", "Contract Review", "Business Formation"];
 
-const userId = "689628a1c17000852c2fb4d6";
+const userId = "6926a13dcc3ee5f409c5b26d";
 
 export default function BusinessManager() {
   const getEmptyBusiness = () => ({
@@ -63,25 +66,23 @@ export default function BusinessManager() {
   const [business, setBusiness] = useState(getEmptyBusiness());
   const [showingNewMembers, setShowingNewMembers] = useState(false);
 
-
   const fetchBusinesses = async () => {
     try {
       const response = await axios.get(`${API_BASE_URL}/business`, {
         headers: {
-          "Content-Type": "application/json",
           Authorization: `Bearer ${AUTH_TOKEN}`,
         },
       });
 
-      const data = response.data.filter(
-        (business: any) => business.user?._id === userId
-      );
+      // Trust backend to return only relevant businesses
+      const businesses = Array.isArray(response.data) ? response.data : [];
 
-      console.log("Fetched businesses:", data);
-      setBusinessList(data || []);
+      console.log("Fetched businesses:", businesses);
+      setBusinessList(businesses);
     } catch (error: any) {
       console.error("Error fetching businesses:", error);
-      toast.error("Failed to fetch businesses");
+      toast.error("Failed to load your businesses");
+      setBusinessList([]);
     }
   };
 
@@ -102,7 +103,6 @@ export default function BusinessManager() {
         : [...prev.tags, tag],
     }));
   };
-
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -151,13 +151,17 @@ export default function BusinessManager() {
       setIsModalOpen(false);
       setBusiness(getEmptyBusiness());
     } catch (error: any) {
-      console.error("Error adding business:", error.response?.data || error.message);
+      console.error(
+        "Error adding business:",
+        error.response?.data || error.message
+      );
       toast.error("Failed to add business");
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm("Are you sure you want to delete this business?")) return;
+    if (!window.confirm("Are you sure you want to delete this business?"))
+      return;
 
     try {
       await axios.delete(`${API_BASE_URL}/business/${id}`, {
@@ -170,12 +174,13 @@ export default function BusinessManager() {
       toast.success("Business deleted successfully");
       await fetchBusinesses();
     } catch (error: any) {
-      console.error("Error deleting business:", error.response?.data || error.message);
+      console.error(
+        "Error deleting business:",
+        error.response?.data || error.message
+      );
       toast.error("Failed to delete business");
     }
   };
-
-
 
   const handleUpdate = async (id: string) => {
     try {
@@ -211,7 +216,10 @@ export default function BusinessManager() {
       setIsEditModalOpen(false);
       await fetchBusinesses();
     } catch (error: any) {
-      console.error("Error updating business:", error.response?.data || error.message);
+      console.error(
+        "Error updating business:",
+        error.response?.data || error.message
+      );
       toast.error("Failed to update business");
     }
   };
@@ -243,7 +251,6 @@ export default function BusinessManager() {
     }
   };
 
-
   useEffect(() => {
     if (keyword || stateFilter || industryFilter) {
       searchBusinesses();
@@ -251,8 +258,6 @@ export default function BusinessManager() {
       fetchBusinesses();
     }
   }, [keyword, stateFilter, industryFilter, page]);
-
-
 
   const fetchFeaturedBusinesses = async () => {
     try {
@@ -271,9 +276,11 @@ export default function BusinessManager() {
     }
   };
 
-
-
-  const toggleFeatured = async (id: string, currentStatus: boolean, businessData: any) => {
+  const toggleFeatured = async (
+    id: string,
+    currentStatus: boolean,
+    businessData: any
+  ) => {
     try {
       const payload = {
         companyName: businessData.companyName,
@@ -299,8 +306,10 @@ export default function BusinessManager() {
           Authorization: `Bearer ${AUTH_TOKEN}`,
         },
       });
-      toast.success(`Business marked as ${!currentStatus ? "Featured" : "Not Featured"}`);
-      // await fetchBusinesses(); 
+      toast.success(
+        `Business marked as ${!currentStatus ? "Featured" : "Not Featured"}`
+      );
+      // await fetchBusinesses();
       if (showingFeatured) {
         // agar featured list dekh rahe hain
         if (currentStatus) {
@@ -325,16 +334,19 @@ export default function BusinessManager() {
         }
       }
     } catch (error: any) {
-      console.error("Error toggling featured:", error.response?.data || error.message);
+      console.error(
+        "Error toggling featured:",
+        error.response?.data || error.message
+      );
       toast.error("Failed to update featured status");
     }
   };
 
-
   const handleLogoUpload = async (businessId: string, file: File) => {
     try {
-
-      const presignUrl = `${API_BASE_URL}/business/${businessId}/logo/upload-url?fileName=${encodeURIComponent(file.name)}&fileType=${encodeURIComponent(file.type)}`;
+      const presignUrl = `${API_BASE_URL}/business/${businessId}/logo/upload-url?fileName=${encodeURIComponent(
+        file.name
+      )}&fileType=${encodeURIComponent(file.type)}`;
 
       const presignRes = await axios.get(presignUrl, {
         headers: { Authorization: `Bearer ${AUTH_TOKEN}` },
@@ -342,11 +354,9 @@ export default function BusinessManager() {
 
       const { url, key } = presignRes.data;
 
-
       await axios.put(url, file, {
         headers: { "Content-Type": file.type },
       });
-
 
       await axios.patch(
         `${API_BASE_URL}/business/${businessId}/logo`,
@@ -367,7 +377,6 @@ export default function BusinessManager() {
     }
   };
 
-
   const handleGalleryUpload = async (businessId: string, files: File[]) => {
     if (!files || files.length === 0) {
       toast.error("Please select at least one image");
@@ -375,12 +384,10 @@ export default function BusinessManager() {
     }
 
     try {
-
       const fileData = files.map((file) => ({
         fileName: file.name,
         fileType: file.type,
       }));
-
 
       const presignRes = await axios.post(
         `${API_BASE_URL}/business/${businessId}/gallery/upload-urls`,
@@ -395,7 +402,6 @@ export default function BusinessManager() {
 
       const { urls } = presignRes.data;
 
-
       await Promise.all(
         urls.map((urlData: any, index: number) =>
           axios.put(urlData.url, files[index], {
@@ -403,7 +409,6 @@ export default function BusinessManager() {
           })
         )
       );
-
 
       const fileKeys = urls.map((u: any) => u.key);
       await axios.patch(
@@ -421,7 +426,9 @@ export default function BusinessManager() {
       await fetchBusinesses();
     } catch (err: any) {
       console.error("Gallery upload error:", err);
-      toast.error(err.response?.data?.message || "Failed to upload gallery images");
+      toast.error(
+        err.response?.data?.message || "Failed to upload gallery images"
+      );
     }
   };
 
@@ -444,12 +451,12 @@ export default function BusinessManager() {
     }
   };
 
-
-
   return (
     <div className="relative max-w-screen mx-auto p-6 ">
       <div>
-        <h2 className="text-2xl font-bold text-gray-900">Business Management</h2>
+        <h2 className="text-2xl font-bold text-gray-900">
+          Business Management
+        </h2>
 
         <div className="flex gap-2 justify-end">
           <Button
@@ -462,7 +469,6 @@ export default function BusinessManager() {
             Add Business
           </Button>
 
-
           <Button
             onClick={() => {
               if (showingFeatured) {
@@ -473,9 +479,8 @@ export default function BusinessManager() {
                 setBusinessList((prev) =>
                   prev.map((b) => ({ ...b, isFeatured: !b.isFeatured }))
                 );
-              }
-              else {
-                fetchFeaturedBusinesses(); 
+              } else {
+                fetchFeaturedBusinesses();
               }
             }}
             className="bg-blue-600 hover:bg-blue-700 text-white"
@@ -496,8 +501,6 @@ export default function BusinessManager() {
           >
             {showingNewMembers ? "Show All" : "Show New Members"}
           </Button>
-
-
         </div>
       </div>
 
@@ -516,7 +519,9 @@ export default function BusinessManager() {
           allowClear
         >
           {states.map((st) => (
-            <Select.Option key={st} value={st}>{st}</Select.Option>
+            <Select.Option key={st} value={st}>
+              {st}
+            </Select.Option>
           ))}
         </Select>
 
@@ -528,17 +533,16 @@ export default function BusinessManager() {
           allowClear
         >
           {industry.map((ind) => (
-            <Select.Option key={ind} value={ind}>{ind}</Select.Option>
+            <Select.Option key={ind} value={ind}>
+              {ind}
+            </Select.Option>
           ))}
         </Select>
       </div>
 
-
-
       <div className="grid gap-4 mt-6 ">
         {businessList.length > 0 ? (
           businessList.map((b) => (
-
             <div
               key={b._id}
               className="bg-white rounded-2xl shadow-md p-5 grid grid-cols-12 gap-6"
@@ -589,7 +593,9 @@ export default function BusinessManager() {
                           </Tag>
                         ))
                       ) : (
-                        <span className="text-gray-400">No services listed</span>
+                        <span className="text-gray-400">
+                          No services listed
+                        </span>
                       )}
                     </div>
                   </div>
@@ -604,7 +610,9 @@ export default function BusinessManager() {
                           </Tag>
                         ))
                       ) : (
-                        <span className="text-gray-400">No industries served</span>
+                        <span className="text-gray-400">
+                          No industries served
+                        </span>
                       )}
                     </div>
                   </div>
@@ -659,10 +667,11 @@ export default function BusinessManager() {
                 {/* Mark Featured */}
                 <Button
                   onClick={() => toggleFeatured(b._id, b.isFeatured, b)}
-                  className={`w-10 h-10 flex items-center justify-center rounded-full shadow-sm ${b.isFeatured
+                  className={`w-10 h-10 flex items-center justify-center rounded-full shadow-sm ${
+                    b.isFeatured
                       ? "bg-green-50 text-green-600 hover:bg-green-100"
                       : "bg-gray-50 text-gray-600 hover:bg-gray-100"
-                    }`}
+                  }`}
                 >
                   <Star className="w-5 h-5" />
                 </Button>
@@ -703,7 +712,6 @@ export default function BusinessManager() {
                 </Button>
               </div>
             </div>
-
           ))
         ) : (
           <p className="text-gray-500">No businesses found</p>
@@ -730,11 +738,6 @@ export default function BusinessManager() {
         setBusiness={setBusiness}
         onUpdate={handleUpdate}
       />
-
-
     </div>
   );
 }
-
-
-
